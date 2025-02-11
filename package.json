@@ -1,0 +1,26 @@
+{
+    "name": "automated-dependency-system",
+    "version": "0.0.1-beta.0",
+    "description": "An example of ADS.",
+    "main": "src/index.js",
+    "bin": {
+        "ads": "./src/cli.js"
+    },
+    "scripts": {
+        "local-start": "node src/cli.js"
+    },
+    "keywords": [
+        "ads",
+        "dependency",
+        "npm",
+        "cve",
+        "version-locking",
+        "ddd"
+    ],
+    "author": "Asine Lornekora",
+    "license": "MIT",
+    "dependencies": {
+        "commander": "^10.0.0",
+        "semver": "^7.3.5"
+    }
+}
