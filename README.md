@@ -1,6 +1,8 @@
 # Automated Dependency System (ADS)
 
-This package implements an automated dependency system (ADS) built with Domain‑Driven Design. It scans for CVEs, enforces version locking, blocks unauthorized dependency changes, and more.
+This package implements an automated dependency system (ADS) built with Domain‑Driven Design. 
+
+It scans for CVEs, enforces version locking, blocks unauthorized dependency changes, and more.
 
 # How to Use the ADS Package
 
@@ -20,12 +22,12 @@ export ADS_MAINTAINER=your_username
 Instead of calling npm directly, use the ADS CLI to trigger ADS checks automatically:
 
 ```bash
-ads check           # Run all ADS checks (CVE scanning, cleaning, locking)
-ads install         # Run npm install (only from package.json)
-ads build           # Run npm build (via "npm run build")
-ads clean-install   # Run npm ci
-ads add foo 1.2.3   # Add a new dependency (if you’re the maintainer)
-ads remove foo      # Remove a dependency (if you’re the maintainer)
+ads check                 # Run all ADS checks (CVE scanning, cleaning, locking)
+ads install               # Run npm install (only from package.json)
+ads build                 # Run npm build (via "npm run build")
+ads clean-install         # Run npm ci
+ads add foo 1.2.3         # Add a new dependency (if you’re the maintainer)
+ads remove foo            # Remove a dependency (if you’re the maintainer)
 ads allowed-versions foo  # List the three most recent versions available for "foo"
 ```
 
