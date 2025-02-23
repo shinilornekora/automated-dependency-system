@@ -14,7 +14,11 @@ class DependencyService {
     lockAllCurrentVersions() {
       console.log("Locking all current dependency versions.");
       const deps = this.dependencyManager.dependencyRepository.getAll();
-      deps.forEach(dep => dep.markReadOnly());
+      deps.forEach(dep => {
+        console.log(dep);
+
+        dep.markReadOnly();
+      })
     }
   
     async runNpmCommand(command, args = []) {

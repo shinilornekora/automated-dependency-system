@@ -12,22 +12,22 @@ class DependencyManager {
     }
 
     async syncWithPackageJson() {
-        const resolvedPackageJson = path.resolve(__dirname, 'package.json');
+        const resolvedPackageJson = path.resolve('package.json');
         const packageJSONContent = String(fs.readFileSync(resolvedPackageJson));
 
         try {
-            JSON.parse(packageJSONContent)
-                .Object.entries(dependencies)
+            Object.entries(JSON.parse(packageJSONContent).dependencies)
                 .forEach(([ name, version ]) => {
                     this.addDependency({
                         name,
                         version,
-                        maintainer: currentUser,
+                        maintainer: this.currentUser,
                         readOnly: false,
                         isLocal: false
                     })
                 })
-        } catch {
+        } catch (err) {
+            console.log(err);
             throw new Error('Package.json is invalid or there is no alike file.');
         }
     }
@@ -38,7 +38,7 @@ class DependencyManager {
         }
 
         if (this.dependencyRepository.get(dependencyData.name)) {
-            throw new Error(`Dependency ${dependencyData.name} already exists.`);
+            return console.log(`Dependency ${dependencyData.name} already exists.`);
         }
 
         const dep = new Dependency(dependencyData);

@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const Dependency = require('../domain/Dependency');
 const DEP_FILE = path.join(process.cwd(), '.ads', 'dependencies.json');
 
 class DependencyRepository {
@@ -53,7 +54,7 @@ class DependencyRepository {
     }
 
     getAll() {
-        return Array.from(this.dependencies.values());
+        return Array.from(this.dependencies.values()).map(dep => new Dependency(dep))
     }
 }
 
