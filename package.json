@@ -1,6 +1,6 @@
 {
     "name": "automated-dependency-system",
-    "version": "0.0.1-beta.0",
+    "version": "0.0.1-beta.1",
     "description": "An example of ADS.",
     "main": "src/index.js",
     "bin": {
