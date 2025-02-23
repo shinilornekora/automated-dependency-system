@@ -3,6 +3,7 @@ const DependencyRepository = require('./infrastructure/DependencyRepository');
 const CVEScanner = require('./infrastructure/CVEScanner');
 const NpmService = require('./infrastructure/NpmService');
 const DependencyManager = require('./domain/DependencyManager');
+const DependencyResolver = require('./domain/DependencyResolver');
 const DependencyService = require('./application/DependencyService');
 
 function createADS(currentUser) {
@@ -11,8 +12,10 @@ function createADS(currentUser) {
     const dependencyRepository = new DependencyRepository();
     const cveScanner = new CVEScanner();
     const npmService = new NpmService();
+    const dependencyResolver = new DependencyResolver();
     const dependencyManager = new DependencyManager({
         dependencyRepository,
+        dependencyResolver,
         cveScanner,
         currentUser,
         melIgnoreList

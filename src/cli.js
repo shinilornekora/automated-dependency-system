@@ -17,7 +17,7 @@ program
     .action(async () => {
         await dependencyManager.syncWithPackageJson();
         await dependencyService.runADSChecks();
-        
+
         console.log("ADS checks complete.");
     });
 
@@ -81,6 +81,13 @@ program
         const versions = await dependencyManager.getAllowedVersions(name);
         console.log(`Allowed versions for ${name}:`, versions);
     });
+
+program
+    .command('resolve')
+    .description('[EXPERIMENTAL]: Try to resolve package.json conflicts')
+    .action(async () => {
+        await dependencyManager.dependencyResolver.resolveConflicts();
+    })
 
 program.parse(process.argv);
 
