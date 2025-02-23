@@ -1,5 +1,7 @@
 const Dependency = require('./Dependency');
 const semver = require('semver');
+const path = require('path');
+const fs = require('fs');
 
 class DependencyManager {
     constructor({ dependencyRepository, cveScanner, currentUser, melIgnoreList = [] }) {
@@ -7,6 +9,27 @@ class DependencyManager {
         this.cveScanner = cveScanner;
         this.currentUser = currentUser;
         this.melIgnoreList = melIgnoreList;
+    }
+
+    async syncWithPackageJson() {
+        const resolvedPackageJson = path.resolve(__dirname, 'package.json');
+        const packageJSONContent = String(fs.readFileSync(resolvedPackageJson));
+
+        try {
+            JSON.parse(packageJSONContent)
+                .Object.entries(dependencies)
+                .forEach(([ name, version ]) => {
+                    this.addDependency({
+                        name,
+                        version,
+                        maintainer: currentUser,
+                        readOnly: false,
+                        isLocal: false
+                    })
+                })
+        } catch {
+            throw new Error('Package.json is invalid or there is no alike file.');
+        }
     }
 
     addDependency(dependencyData) {

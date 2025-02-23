@@ -15,7 +15,9 @@ program
     .command('check')
     .description("Run ADS checks (CVE scan, remove unused dependencies, lock versions)")
     .action(async () => {
+        await dependencyManager.syncWithPackageJson();
         await dependencyService.runADSChecks();
+        
         console.log("ADS checks complete.");
     });
 
@@ -51,7 +53,6 @@ program
                 name,
                 version,
                 maintainer: currentUser,
-                resolvedByGPT: false,
                 readOnly: false,
                 isLocal: false
             });
