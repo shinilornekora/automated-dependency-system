@@ -1,7 +1,7 @@
 const { exec } = require('child_process');
 const semver = require('semver');
 
-class CVEScanner {
+export class CVEScanner {
     constructor() {
         this.auditResults = null;
     }

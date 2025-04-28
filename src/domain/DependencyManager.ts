@@ -1,9 +1,18 @@
-const Dependency = require('./Dependency');
-const semver = require('semver');
-const path = require('path');
-const fs = require('fs');
+import { Dependency } from './Dependency';
+import path from 'path';
+import fs from 'fs';
+import { User } from './User';
+import { CVEScanner } from '../infrastructure/CVEScanner';
+import { DependencyResolver } from './DependencyResolver';
+import { DependencyRepository } from '../infrastructure/DependencyRepository';
 
-class DependencyManager {
+export class DependencyManager {
+    private currentUser: User;
+    private cveScanner: CVEScanner;
+    private dependencyResolver: DependencyResolver;
+    private dependencyRepository: DependencyRepository;
+    private melIgnoreList: string[];
+
     constructor({
         dependencyRepository,
         dependencyResolver,
@@ -16,6 +25,10 @@ class DependencyManager {
         this.cveScanner = cveScanner;
         this.currentUser = currentUser;
         this.melIgnoreList = melIgnoreList;
+    }
+
+    async updateConfigurationFile(payload) {
+        // пока стабим
     }
 
     async syncWithPackageJson() {

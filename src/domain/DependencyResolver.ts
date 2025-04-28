@@ -2,7 +2,7 @@ const fs = require('fs');
 const { execSync } = require('child_process');
 const semver = require('semver');
 
-class DependencyResolver {
+export class DependencyResolver {
     constructor() {
         this.packageJson = this.loadJSONFile('package.json');
         this.packageLock = this.loadJSONFile('package-lock.json', true);

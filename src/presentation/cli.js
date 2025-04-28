@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 const program = require('commander');
-const createADS = require('./index');
-const packageJson = require('../package.json');
+const createADS = require('../index');
+const packageJson = require('../../package.json');
 
 // Determine the current user (the maintainer) from an environment variable or fallback.
 const currentUser = process.env.ADS_MAINTAINER || process.env.USER || 'defaultMaintainer';

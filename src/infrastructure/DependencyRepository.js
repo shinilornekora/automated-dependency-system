@@ -3,7 +3,7 @@ const path = require('path');
 const Dependency = require('../domain/Dependency');
 const DEP_FILE = path.join(process.cwd(), '.ads', 'dependencies.json');
 
-class DependencyRepository {
+export class DependencyRepository {
     constructor() {
         this.dependencies = new Map();
         this.load();
@@ -57,5 +57,3 @@ class DependencyRepository {
         return Array.from(this.dependencies.values()).map(dep => new Dependency(dep))
     }
 }
-
-module.exports = DependencyRepository;
