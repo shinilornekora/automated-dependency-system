@@ -1,7 +1,7 @@
-const { spawn } = require('child_process');
+import { spawn } from 'child_process';
 
-class NpmService {
-    run(command, args = []) {
+export class NpmService {
+    run(command: string, args: string[] = []) {
         // Block install-changing operations: if extra arguments are provided with "install" then exit.
         if (command === 'install' && args.length > 0) {
             console.error("Install-changing operations are blocked by ADS.");
@@ -16,5 +16,3 @@ class NpmService {
         });
     }
 }
-
-module.exports = NpmService;

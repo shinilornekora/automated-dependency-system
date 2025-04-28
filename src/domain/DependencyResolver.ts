@@ -1,163 +1,131 @@
-const fs = require('fs');
-const { execSync } = require('child_process');
-const semver = require('semver');
+import * as fs from 'fs';
+import * as path from 'path';
+import * as kiwi from '@lume/kiwi';
 
-export class DependencyResolver {
-    constructor() {
-        this.packageJson = this.loadJSONFile('package.json');
-        this.packageLock = this.loadJSONFile('package-lock.json', true);
-        this.collectedRanges = {}; // packageName -> array of version ranges
-        this.resolutions = {};     // packageName -> chosen version
+type DependencySection = 'dependencies' | 'devDependencies' | 'peerDependencies';
+type VersionSpec = { op: string, major: number, minor: number, patch: number };
+type PkgConstraints = { [pkg: string]: VersionSpec[] };
+
+function parseVersion(versionStr: string): VersionSpec[] {
+    const specs: VersionSpec[] = [];
+    const re = /(\^|~|>=|<=|>|<|=)?\s*([\d]+)(?:\.([\d]+))?(?:\.([\d]+))?/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(versionStr)) !== null) {
+        let op = m[1] || '==';
+        if (op === '=') op = '==';
+        let major = parseInt(m[2] || '0', 10);
+        let minor = parseInt(m[3] || '0', 10);
+        let patch = parseInt(m[4] || '0', 10);
+        specs.push({ op, major, minor, patch });
     }
+    return specs;
+}
 
-    /**
-     * Loads a JSON file (package.json or package-lock.json).
-     * @param {string} path - Path to the file.
-     * @param {boolean} required - If true, exit if the file is not found.
-     * @returns {object} Parsed JSON object.
-     */
-    loadJSONFile(path, required = false) {
-        try {
-            const data = fs.readFileSync(path, 'utf8');
-            return JSON.parse(data);
-        } catch (err) {
-            if (required) {
-                console.error(`Error: ${path} not found or invalid. This script requires a valid ${path}.`);
-                process.exit(1);
-            } else {
-                console.warn(`${path} not found; proceeding without it.`);
-                return {};
-            }
-        }
-    }
-
-    /**
-     * Collects all version ranges from:
-     * 1. Direct dependencies (and optionally devDependencies) in package.json.
-     * 2. All "requires" fields in package-lock.json's dependency tree.
-     */
-    collectVersionRanges() {
-        // Collect direct dependencies from package.json
-        const directDeps = this.packageJson.dependencies || {};
-        const devDeps = this.packageJson.devDependencies || {};
-
-        for (const [pkg, range] of Object.entries({ ...directDeps, ...devDeps })) {
-            this.addRange(pkg, range);
-        }
-
-        // Traverse package-lock.json dependencies recursively (if available)
-        const traverseLock = (deps) => {
-            if (!deps) {
-                return;
-            }
-
-            for (const [pkg, data] of Object.entries(deps)) {
-                // "requires" field holds the version ranges that this package needs for its own dependencies.
-                if (data.requires) {
-                    for (const [reqPkg, reqRange] of Object.entries(data.requires)) {
-                        this.addRange(reqPkg, reqRange);
-                    }
-                }
-
-                // Continue with nested dependencies (if any)
-                if (data.dependencies) {
-                    traverseLock(data.dependencies);
-                }
-            }
-        };
-
-        traverseLock(this.packageLock.dependencies);
-    }
-
-    /**
-     * Adds a version range requirement for a package.
-     * @param {string} pkg - Package name.
-     * @param {string} range - Version range string.
-     */
-    addRange(pkg, range) {
-        if (!this.collectedRanges[pkg]) {
-            this.collectedRanges[pkg] = new Set();
-        }
-        
-        this.collectedRanges[pkg].add(range);
-    }
-
-    /**
-     * Returns the available versions for a package by querying the npm registry.
-     * Uses "npm view <package> versions --json".
-     * @param {string} packageName
-     * @returns {string[]} Array of version strings.
-     */
-    getAvailableVersions(packageName) {
-        try {
-            const command = `npm view ${packageName} versions --json`
-            const output = execSync(command, { encoding: 'utf8' });
-            const versions = JSON.parse(output);
-
-            return versions;
-        } catch (err) {
-            console.error(`Error fetching versions for ${packageName}:`, err.message);
-
-            return [];
+function collectAllConstraints(packageJson: any): { [pkg: string]: VersionSpec[] } {
+    const sections: DependencySection[] = ['dependencies', 'devDependencies', 'peerDependencies'];
+    let result: { [pkg: string]: VersionSpec[] } = {};
+    for (let section of sections) {
+        const deps = packageJson[section] || {};
+        for (const [pkg, ver] of Object.entries(deps)) {
+            if (!result[pkg]) result[pkg] = [];
+            result[pkg].push(...parseVersion(ver as string));
         }
     }
+    return result;
+}
 
-  /**
-   * Resolves a single package by choosing a version that satisfies all collected ranges.
-   * @param {string} packageName
-   * @param {string[]} ranges - Array of version ranges (e.g., ["^1.0.0", "~1.2.3"])
-   * @returns {string|null} The chosen version or null if no version satisfies all ranges.
-   */
-    resolvePackage(packageName, ranges) {
-        const availableVersions = this.getAvailableVersions(packageName);
-        
-        if (!availableVersions || availableVersions.length === 0) {
-            console.error(`No available versions found for ${packageName}`);
-            return null;
+function addConstraints(
+    solver: kiwi.Solver,
+    variables: { [pkg: string]: kiwi.Variable },
+    pkg: string,
+    specs: VersionSpec[]
+) {
+    const v = variables[pkg];
+    for (const { op, major, minor, patch } of specs) {
+        const num = major * 10000 + minor * 100 + patch;
+        switch (op) {
+            case '==':
+                solver.addConstraint(new kiwi.Constraint(v, kiwi.Operator.Eq, num));
+                break;
+            case '>=':
+                solver.addConstraint(new kiwi.Constraint(v, kiwi.Operator.Ge, num));
+                break;
+            case '<=':
+                solver.addConstraint(new kiwi.Constraint(v, kiwi.Operator.Le, num));
+                break;
+            case '>':
+                solver.addConstraint(new kiwi.Constraint(v, kiwi.Operator.Ge, num));
+                break;
+            case '<':
+                solver.addConstraint(new kiwi.Constraint(v, kiwi.Operator.Le, num));
+                break;
+            case '^':
+                solver.addConstraint(new kiwi.Constraint(v, kiwi.Operator.Ge, num));
+                solver.addConstraint(new kiwi.Constraint(v, kiwi.Operator.Le, (major + 1) * 10000));
+                break;
+            case '~':
+                solver.addConstraint(new kiwi.Constraint(v, kiwi.Operator.Ge, num));
+                solver.addConstraint(new kiwi.Constraint(v, kiwi.Operator.Le, major * 10000 + (minor + 1) * 100));
+                break;
+            default:
+                throw new Error('Unknown operator: ' + op);
         }
-
-        // Filter available versions to those that satisfy every version range
-        const candidates = availableVersions.filter(version =>
-            ranges.every(range => semver.satisfies(version, range))
-        );
-
-        if (candidates.length === 0) {
-            console.error(
-                `No version of ${packageName} satisfies all ranges: ${ranges.join(', ')}`
-            );
-
-            return null;
-        }
-
-        // Sort candidates (highest version first) and return the highest version
-        candidates.sort(semver.rcompare);
-        return candidates[0];
-    }
-
-  /**
-   * Resolves conflicts for all packages by:
-   * 1. Collecting version ranges.
-   * 2. For each package, querying available versions and selecting one that satisfies all ranges.
-   */
-    resolveConflicts() {
-        this.collectVersionRanges();
-
-        // Convert each set of ranges into an array for processing
-        for (const pkg in this.collectedRanges) {
-            const ranges = Array.from(this.collectedRanges[pkg]);
-            const resolvedVersion = this.resolvePackage(pkg, ranges);
-            
-            if (!resolvedVersion) {
-                console.error(`Failed to resolve ${pkg} with ranges: ${ranges.join(', ')}`);
-                process.exit(1);
-            }
-
-            this.resolutions[pkg] = resolvedVersion;
-            console.log(`Resolved ${pkg} to version ${resolvedVersion} (ranges: ${ranges.join(', ')})`);
-        }
-
-        return this.resolutions;
     }
 }
 
-module.exports = DependencyResolver;
+export class DependencyResolver {
+    private constraints: PkgConstraints;
+    private resolved: { [pkg: string]: string } = {};
+    constructor(packageJson: any) {
+        this.constraints = collectAllConstraints(packageJson);
+    }
+
+    resolve() {
+        const pkgs = Object.keys(this.constraints);
+        const variables: { [pkg: string]: kiwi.Variable } = {};
+        pkgs.forEach(pkg => {
+            variables[pkg] = new kiwi.Variable(pkg);
+        });
+
+        const solver = new kiwi.Solver();
+
+        let impossible: string[] = [];
+
+        // будет пытаться поочередно каждый пакет решать отдельно,
+        // чтобы в случае конфликта видеть всех конфликтующих
+        pkgs.forEach(pkg => {
+            try {
+                const singleSolver = new kiwi.Solver();
+                singleSolver.addEditVariable(variables[pkg], kiwi.Strength.weak);
+                singleSolver.suggestValue(variables[pkg], 10000);
+                addConstraints(singleSolver, variables, pkg, this.constraints[pkg]);
+                singleSolver.updateVariables();
+            } catch (e) {
+                impossible.push(pkg);
+            }
+        });
+
+        if (impossible.length) {
+            return `Несовместимые зависимости: ${impossible.join(', ')}.`;
+        }
+
+        // Если никаких конфликтов, то решим все скопом и получим решения
+        pkgs.forEach(pkg => {
+            solver.addEditVariable(variables[pkg], kiwi.Strength.weak);
+            solver.suggestValue(variables[pkg], 10000);
+            addConstraints(solver, variables, pkg, this.constraints[pkg]);
+        });
+
+        solver.updateVariables();
+
+        const result: { [pkg: string]: string } = {};
+        pkgs.forEach(pkg => {
+            const num = Math.round(variables[pkg].value());
+            const major = Math.floor(num / 10000);
+            const minor = Math.floor((num % 10000) / 100);
+            const patch = num % 100;
+            result[pkg] = `${major}.${minor}.${patch}`;
+        });
+        return result;
+    }
+}

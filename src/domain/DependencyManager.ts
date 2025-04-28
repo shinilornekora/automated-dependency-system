@@ -1,16 +1,24 @@
-import { Dependency } from './Dependency';
-import path from 'path';
-import fs from 'fs';
-import { User } from './User';
-import { CVEScanner } from '../infrastructure/CVEScanner';
-import { DependencyResolver } from './DependencyResolver';
-import { DependencyRepository } from '../infrastructure/DependencyRepository';
+import {Dependency} from './Dependency';
+import * as path from 'path';
+import * as fs from 'fs';
+import {User} from './User';
+import {CVEScanner} from '../infrastructure/CVEScanner';
+import {DependencyResolver} from './DependencyResolver';
+import {DependencyRepository} from '../infrastructure/DependencyRepository';
+
+type Props = {
+    currentUser: User;
+    cveScanner: CVEScanner;
+    dependencyResolver: DependencyResolver;
+    dependencyRepository: DependencyRepository;
+    melIgnoreList: string[];
+}
 
 export class DependencyManager {
-    private currentUser: User;
+    private readonly currentUser: User;
     private cveScanner: CVEScanner;
     private dependencyResolver: DependencyResolver;
-    private dependencyRepository: DependencyRepository;
+    dependencyRepository: DependencyRepository;
     private melIgnoreList: string[];
 
     constructor({
@@ -19,7 +27,7 @@ export class DependencyManager {
         cveScanner,
         currentUser,
         melIgnoreList = []
-    }) {
+    }: Props) {
         this.dependencyRepository = dependencyRepository;
         this.dependencyResolver = dependencyResolver;
         this.cveScanner = cveScanner;
@@ -27,7 +35,7 @@ export class DependencyManager {
         this.melIgnoreList = melIgnoreList;
     }
 
-    async updateConfigurationFile(payload) {
+    async updateConfigurationFile(payload: unknown) {
         // пока стабим
     }
 
@@ -36,15 +44,17 @@ export class DependencyManager {
         const packageJSONContent = String(fs.readFileSync(resolvedPackageJson));
 
         try {
-            Object.entries(JSON.parse(packageJSONContent).dependencies)
+            Object.entries<string>(JSON.parse(packageJSONContent).dependencies)
                 .forEach(([name, version]) => {
-                    this.addDependency({
+                    const dep = new Dependency({
                         name,
                         version,
-                        maintainer: this.currentUser,
+                        maintainer: this.currentUser.getName,
                         readOnly: false,
                         isLocal: false
+
                     })
+                    this.addDependency(dep);
                 })
         } catch (err) {
             console.log(err);
@@ -52,32 +62,32 @@ export class DependencyManager {
         }
     }
 
-    addDependency(dependencyData) {
-        if (dependencyData.maintainer !== this.currentUser) {
-            throw new Error(`Only the maintainer (${dependencyData.maintainer}) can add dependency ${dependencyData.name}.`);
+    addDependency(dependencyData: Dependency) {
+        if (!this.currentUser.isPackageMaintainer) {
+            throw new Error(`Only the maintainer (${dependencyData.maintainer}) can add dependency ${dependencyData.getName}.`);
         }
 
-        if (this.dependencyRepository.get(dependencyData.name)) {
-            return console.log(`Dependency ${dependencyData.name} already exists.`);
+        if (this.dependencyRepository.get(dependencyData.getName)) {
+            return console.log(`Dependency ${dependencyData.getName} already exists.`);
         }
 
-        const dep = new Dependency(dependencyData);
+        const dep = dependencyData;
         dep.markReadOnly();
 
         this.dependencyRepository.add(dep);
-        console.log(`Dependency ${dep.name} added with version ${dep.version} as read-only.`);
+        console.log(`Dependency ${dep.getName} added with version ${dep.getVersion} as read-only.`);
 
         return dep;
     }
 
-    removeDependency(dependencyName) {
+    removeDependency(dependencyName: string) {
         const dep = this.dependencyRepository.get(dependencyName);
 
         if (!dep) {
             throw new Error(`Dependency ${dependencyName} not found.`);
         }
 
-        if (dep.maintainer !== this.currentUser) {
+        if (!this.currentUser.isPackageMaintainer) {
             throw new Error(`Only the maintainer (${dep.maintainer}) can remove dependency ${dependencyName}.`);
         }
 
@@ -92,41 +102,45 @@ export class DependencyManager {
     async checkAndResolveCVEs() {
         const dependencies = this.dependencyRepository.getAll();
         for (const dep of dependencies) {
-            if (dep.isLocal) {
-                console.log(`Local dependency pointer detected for ${dep.name}. Removing immediately.`);
-                this.dependencyRepository.remove(dep.name);
+            if (dep.getIsLocal) {
+                console.log(`Local dependency pointer detected for ${dep.getName}. Removing immediately.`);
+                this.dependencyRepository.remove(dep.getName);
                 continue;
             }
             try {
                 const cveReport = await this.cveScanner.scan(dep);
                 if (cveReport.severity === 'high' || cveReport.severity === 'critical') {
                     // For high/critical CVEs, attempt to downgrade.
-                    const secureVersion = this.getSecureVersion(dep.version);
-                    console.log(`High/Critical vulnerability found in ${dep.name}. Attempting downgrade from ${dep.version} to ${secureVersion}.`);
+                    const secureVersion = this.getSecureVersion(dep.getVersion);
 
-                    if (!dep.readOnly) {
+                    console.log(`
+                        High/Critical vulnerability found in ${dep.getName}.\n
+                        Attempting downgrade from ${dep.getVersion} to ${secureVersion}.\n
+                    `);
+
+                    if (!dep.isReadOnly) {
                         dep.updateVersion(secureVersion);
                     } else {
-                        console.warn(`Dependency ${dep.name} is read-only; cannot downgrade.`);
+                        console.warn(`Dependency ${dep.getName} is read-only; cannot downgrade.`);
                     }
                 } else if (cveReport.severity === 'fixed') {
                     // If the vulnerability is fixed, attempt to upgrade.
                     const latestVersion = cveReport.fixedVersion;
-                    console.log(`Vulnerability fixed for ${dep.name}. Attempting upgrade from ${dep.version} to ${latestVersion}.`);
-                    if (!dep.readOnly) {
+                    console.log(`Vulnerability fixed for ${dep.getName}. Attempting upgrade from ${dep.getVersion} to ${latestVersion}.`);
+                    if (!dep.isReadOnly) {
                         dep.updateVersion(latestVersion);
                     } else {
-                        console.warn(`Dependency ${dep.name} is read-only; cannot upgrade.`);
+                        console.warn(`Dependency ${dep.getName} is read-only; cannot upgrade.`);
                     }
                 }
                 dep.updateLastUsed();
             } catch (err) {
-                console.error(`Error scanning ${dep.name}: ${err.message}`);
+                console.error(`Error scanning ${dep.getName}`);
             }
         }
     }
 
-    getSecureVersion(currentVersion) {
+    getSecureVersion(currentVersion: string) {
         // Example: downgrade by reducing the minor version.
         const parts = currentVersion.split('.');
 
@@ -151,42 +165,37 @@ export class DependencyManager {
         const dependencies = this.dependencyRepository.getAll();
 
         for (const dep of dependencies) {
-            if ((now - dep.lastUsed) > threshold) {
-                console.log(`Dependency ${dep.name} has not been used for over 5 hours. Removing...`);
-                this.dependencyRepository.remove(dep.name);
+            if ((now - dep.getLastUsed) > threshold) {
+                console.log(`Dependency ${dep.getName} has not been used for over 5 hours. Removing...`);
+                this.dependencyRepository.remove(dep.getName);
             }
         }
     }
 
-    checkMelIgnore(dependencyName) {
+    checkMelIgnore(dependencyName: string) {
         return this.melIgnoreList.includes(dependencyName);
     }
 
 
-    async getAllowedVersions(dependencyName) {
+    async getAllowedVersions(dependencyName: string) {
         console.log(`Fetching allowed versions for ${dependencyName} (three most recent).`);
         const { execSync } = require('child_process');
 
         try {
             const output = execSync(`npm view ${dependencyName} versions --json`).toString();
-            const versions = JSON.parse(output);
+            const versions = JSON.parse(output) as string[];
 
             // Регулярное выражение для фильтрации версий в формате x.x.x
             const semverRegex = /^\d+\.\d+\.\d+$/;
 
             // Фильтрация версий и возврат трех последних
-            const validVersions = versions
+            return versions
                 .filter(version => semverRegex.test(version))
                 .slice(-3)
                 .reverse();
-
-            return validVersions;
         } catch (err) {
-            console.error(`Error fetching versions for ${dependencyName}: ${err.message}`);
+            console.error(`Error fetching versions for ${dependencyName}`);
             return [];
         }
     }
-
 }
-
-module.exports = DependencyManager;

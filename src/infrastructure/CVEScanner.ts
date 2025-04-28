@@ -1,7 +1,11 @@
-const { exec } = require('child_process');
-const semver = require('semver');
+import { Dependency } from "../domain/Dependency";
+
+import { exec } from 'child_process';
+import * as semver from 'semver';
 
 export class CVEScanner {
+    private auditResults: Promise<any> | null;
+
     constructor() {
         this.auditResults = null;
     }
@@ -12,7 +16,7 @@ export class CVEScanner {
         }
 
         return new Promise((resolve, reject) => {
-            exec('npm audit --json', (error, stdout, stderr) => {
+            exec('npm audit --json', (_: unknown, stdout: string) => {
                 try {
                     const result = JSON.parse(stdout);
                     this.auditResults = result;
@@ -24,17 +28,17 @@ export class CVEScanner {
         });
     }
 
-    async scan(dependency) {
+    async scan(dependency: Dependency) {
         try {
             const auditResults = await this.getAuditResults();
             const advisories = auditResults.advisories || {};
             for (const key in advisories) {
                 const advisory = advisories[key];
-                if (advisory.module_name === dependency.name) {
+                if (advisory.module_name === dependency.getName) {
                     if (['high', 'critical'].includes(advisory.severity)) {
                         // If a patched version is defined but the current version does not satisfy it, return a "fixed" signal.
-                        if (advisory.patched_versions && !semver.satisfies(dependency.version, advisory.patched_versions)) {
-                        const fixedVersion = this.getLatestVersion(dependency.name);
+                        if (advisory.patched_versions && !semver.satisfies(dependency.getVersion, advisory.patched_versions)) {
+                        const fixedVersion = this.getLatestVersion(dependency.getName);
                         return { severity: 'fixed', fixedVersion };
                         }
                         return { severity: advisory.severity };
@@ -44,18 +48,18 @@ export class CVEScanner {
 
             return { severity: 'none' };
         } catch (err) {
-            console.error(`CVE scanning error for ${dependency.name}: ${err.message}`);
+            console.error(`CVE scanning error for ${dependency.getName}`);
             return { severity: 'none' };
         }
     }
 
-    getLatestVersion(packageName) {
+    getLatestVersion(packageName: string) {
         const { execSync } = require('child_process');
         try {
             const version = execSync(`npm view ${packageName} version`).toString().trim();
             return version;
         } catch (err) {
-            console.error(`Error fetching latest version for ${packageName}: ${err.message}`);
+            console.error(`Error fetching latest version for ${packageName}`);
             return null;
         }
     }

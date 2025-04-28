@@ -1,11 +1,13 @@
 #!/usr/bin/env node
-const program = require('commander');
-const createADS = require('../index');
-const packageJson = require('../../package.json');
+import { program } from 'commander';
+import { createADS } from '../index';
+import { Dependency } from "../domain/Dependency";
+
+const packageJson = require("../../package.json");
 
 // Determine the current user (the maintainer) from an environment variable or fallback.
-const currentUser = process.env.ADS_MAINTAINER || process.env.USER || 'defaultMaintainer';
-const { dependencyManager, dependencyService } = createADS(currentUser);
+const currentUsername = process.env.ADS_MAINTAINER || process.env.USER || 'defaultMaintainer';
+const { dependencyManager, dependencyService } = createADS(currentUsername);
 
 program
   .version(packageJson.version)
@@ -49,16 +51,18 @@ program
     .description("Add a new dependency via ADS (only for maintainers)")
     .action((name, version) => {
         try {
-            dependencyManager.addDependency({
+            const dep = new Dependency({
                 name,
                 version,
-                maintainer: currentUser,
+                maintainer: currentUsername,
                 readOnly: false,
                 isLocal: false
-            });
+            })
+
+            dependencyManager.addDependency(dep);
             console.log(`Added dependency ${name}@${version}.`);
         } catch (err) {
-            console.error(err.message);
+            console.error(`Failed to add dependency ${name}.`);
         }
     });
 
@@ -70,7 +74,7 @@ program
             dependencyManager.removeDependency(name);
             console.log(`Removed dependency ${name}.`);
         } catch (err) {
-            console.error(err.message);
+            console.error(`Error while trying to remove dependency ${name}.`);
         }
     });
 
@@ -86,7 +90,7 @@ program
     .command('resolve')
     .description('[EXPERIMENTAL]: Try to resolve package.json conflicts')
     .action(async () => {
-        await dependencyManager.dependencyResolver.resolveConflicts();
+        // пока стаб
     })
 
 program.parse(process.argv);

@@ -2,12 +2,13 @@
     "name": "automated-dependency-system",
     "version": "0.0.1-beta.2",
     "description": "An example of ADS.",
-    "main": "src/index.js",
+    "main": "src/index.ts",
     "bin": {
-        "ads": "./src/cli.js"
+        "ads": "dist/presentation/cli.js"
     },
     "scripts": {
-        "local-start": "node src/presentation/cli.js"
+        "local-start": "node src/presentation/cli.ts",
+        "build": "tsc"
     },
     "keywords": [
         "ads",
@@ -18,12 +19,17 @@
         "ddd"
     ],
     "author": "Asine Lornekora",
+    "type": "commonjs",
     "license": "MIT",
     "dependencies": {
+        "@lume/kiwi": "^0.4.4",
         "commander": "^10.0.0",
-        "semver": "^7.3.5"
+        "kiwi": "^0.2.2",
+        "semver": "^7.3.5",
+        "typescript": "^5.8.3"
     },
     "devDependencies": {
-        "@types/node": "^22.15.3"
+        "@types/node": "^22.15.3",
+        "@types/semver": "^7.7.0"
     }
 }

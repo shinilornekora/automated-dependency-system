@@ -1,5 +1,16 @@
-class DependencyService {
-    constructor({ dependencyManager, npmService }) {
+import { DependencyManager } from "../domain/DependencyManager";
+import { NpmService } from "../infrastructure/NpmService";
+
+type Props = {
+    dependencyManager: DependencyManager;
+    npmService: NpmService;
+}
+
+export class DependencyService {
+    private dependencyManager: DependencyManager;
+    private npmService: NpmService;
+    
+    constructor({ dependencyManager, npmService }: Props) {
       this.dependencyManager = dependencyManager;
       this.npmService = npmService;
     }
@@ -21,11 +32,8 @@ class DependencyService {
       })
     }
   
-    async runNpmCommand(command, args = []) {
+    async runNpmCommand(command: string, args: string[] = []) {
       await this.runADSChecks();
       this.npmService.run(command, args);
     }
-  }
-  
-  module.exports = DependencyService;
-  
+}

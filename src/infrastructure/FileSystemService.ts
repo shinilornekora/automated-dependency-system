@@ -1,7 +1,7 @@
-const fs = require('fs');
-const path = require('path');
+import * as fs from 'fs';
+import * as path from 'path';
 
-class FileSystemService {
+export class FileSystemService {
     readMelIgnore(filePath = path.join(process.cwd(), '.melignore')) {
         try {
             if (fs.existsSync(filePath)) {
@@ -12,7 +12,7 @@ class FileSystemService {
 
             return [];
         } catch (err) {
-            console.error(`Error reading .melignore: ${err.message}`);
+            console.error(`Error reading .melignore`);
             return [];
         }
     }
@@ -25,10 +25,8 @@ class FileSystemService {
             }
             return null;
         } catch (err) {
-            console.error(`Error reading package.json: ${err.message}`);
+            console.error(`Error reading package.json.`);
             return null;
         }
     }
 }
-
-module.exports = FileSystemService;

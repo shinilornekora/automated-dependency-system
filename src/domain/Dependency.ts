@@ -1,19 +1,29 @@
-export class Dependency {
+type Props = {
     name: string;
     version: string;
     maintainer: string;
     readOnly: boolean;
-    resolvedByGPT: boolean;
-    lastUsed: number;
-    isLocal: boolean;
+    resolvedByGPT?: boolean,
+    lastUsed?: number;
+    isLocal?: boolean;
+}
 
-    constructor({ name, version, maintainer, resolvedByGPT = false, readOnly = false, lastUsed = Date.now(), isLocal = false }) {
+export class Dependency {
+    private readonly name: string;
+    private version: string;
+    readonly maintainer: string;
+    private readOnly: boolean;
+    private readonly resolvedByGPT: boolean | undefined;
+    private lastUsed: number;
+    private readonly isLocal: boolean | undefined;
+
+    constructor({ name, version, maintainer, resolvedByGPT, readOnly, lastUsed, isLocal }: Props) {
         this.name = name;
         this.version = version;
         this.maintainer = maintainer;
         this.resolvedByGPT = resolvedByGPT;
         this.readOnly = readOnly;
-        this.lastUsed = lastUsed;
+        this.lastUsed = lastUsed ?? Date.now();
         this.isLocal = isLocal;
     }
     
@@ -25,11 +35,35 @@ export class Dependency {
         this.version = newVersion;
     }
     
-    markReadOnly() {
+    public markReadOnly() {
         this.readOnly = true;
     }
-    
-    updateLastUsed() {
+
+    public get isReadOnly() {
+        return this.readOnly;
+    }
+
+    public get getName() {
+        return this.name;
+    }
+
+    public get getVersion() {
+        return this.version;
+    }
+
+    public get isResolvedByGPT() {
+        return this.resolvedByGPT;
+    }
+
+    get getIsLocal() {
+        return this.isLocal;
+    }
+
+    get getLastUsed() {
+        return this.lastUsed
+    }
+
+    public updateLastUsed() {
         this.lastUsed = Date.now();
     }
 }
