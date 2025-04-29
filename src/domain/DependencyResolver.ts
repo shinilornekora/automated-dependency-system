@@ -74,7 +74,7 @@ function addConstraints(
 }
 
 export class DependencyResolver {
-    private constraints: PkgConstraints;
+    private readonly constraints: PkgConstraints;
     private resolved: { [pkg: string]: string } = {};
     constructor(packageJson: any) {
         this.constraints = collectAllConstraints(packageJson);

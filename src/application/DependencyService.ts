@@ -1,5 +1,6 @@
 import { DependencyManager } from "../domain/DependencyManager";
 import { NpmService } from "../infrastructure/NpmService";
+import {Dependency} from "../domain/Dependency";
 
 type Props = {
     dependencyManager: DependencyManager;
@@ -35,5 +36,21 @@ export class DependencyService {
     async runNpmCommand(command: string, args: string[] = []) {
       await this.runADSChecks();
       this.npmService.run(command, args);
+    }
+
+    getMaintanerUserName() {
+        return null;
+    }
+
+    addDependency(dep: Dependency) {
+        return null;
+    }
+
+    getAllowedVersions(name: string) {
+        return null;
+    }
+
+    removeDependency(name: string) {
+        return null;
     }
 }

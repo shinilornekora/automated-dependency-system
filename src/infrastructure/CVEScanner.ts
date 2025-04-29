@@ -1,8 +1,11 @@
 import { Dependency } from "../domain/Dependency";
-
 import { exec } from 'child_process';
+
 import * as semver from 'semver';
 
+/**
+ * Класс для сканирования текущих уязвимостей в зависимостях.
+ */
 export class CVEScanner {
     private auditResults: Promise<any> | null;
 
@@ -10,12 +13,11 @@ export class CVEScanner {
         this.auditResults = null;
     }
 
+    /**
+     * Метод который вызывает стандартную проверку на уязвимости от npm.
+     */
     async getAuditResults() {
-        if (this.auditResults) {
-            return this.auditResults;
-        }
-
-        return new Promise((resolve, reject) => {
+        return new Promise<any>((resolve, reject) => {
             exec('npm audit --json', (_: unknown, stdout: string) => {
                 try {
                     const result = JSON.parse(stdout);
@@ -28,19 +30,28 @@ export class CVEScanner {
         });
     }
 
+    /**
+     * Общий скан пакета, исходная точка.
+     * @param dependency
+     */
     async scan(dependency: Dependency) {
         try {
             const auditResults = await this.getAuditResults();
             const advisories = auditResults.advisories || {};
+
             for (const key in advisories) {
                 const advisory = advisories[key];
+
                 if (advisory.module_name === dependency.getName) {
                     if (['high', 'critical'].includes(advisory.severity)) {
                         // If a patched version is defined but the current version does not satisfy it, return a "fixed" signal.
                         if (advisory.patched_versions && !semver.satisfies(dependency.getVersion, advisory.patched_versions)) {
-                        const fixedVersion = this.getLatestVersion(dependency.getName);
-                        return { severity: 'fixed', fixedVersion };
+                            return {
+                                severity: 'fixed',
+                                fixedVersion: this.getLatestVersion(dependency.getName)
+                            };
                         }
+
                         return { severity: advisory.severity };
                     }
                 }
@@ -53,16 +64,17 @@ export class CVEScanner {
         }
     }
 
+    /**
+     * Берет последнюю версию пакета
+     * @param packageName
+     */
     getLatestVersion(packageName: string) {
         const { execSync } = require('child_process');
         try {
-            const version = execSync(`npm view ${packageName} version`).toString().trim();
-            return version;
+            return execSync(`npm view ${packageName} version`).toString().trim();
         } catch (err) {
             console.error(`Error fetching latest version for ${packageName}`);
             return null;
         }
     }
 }
-
-module.exports = CVEScanner;

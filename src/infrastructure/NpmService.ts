@@ -1,13 +1,22 @@
 import { spawn } from 'child_process';
+import { User } from "../domain/User";
 
+const RESTRICTED_COMMANDS = [
+    'install', 'i', 'remove', 'rm'
+]
+
+/**
+ * Класс для взаимодействия с пакетным менеджером.
+ * Эта обертка нужна для учтения пермиссий согласно переданным ролям.
+ */
 export class NpmService {
+    private userImage: User;
+
+    constructor(userImage: User) {
+        this.userImage = userImage;
+    }
+
     run(command: string, args: string[] = []) {
-        // Block install-changing operations: if extra arguments are provided with "install" then exit.
-        if (command === 'install' && args.length > 0) {
-            console.error("Install-changing operations are blocked by ADS.");
-            process.exit(1);
-        }
-        
         const npm = process.platform === "win32" ? "npm.cmd" : "npm";
         const child = spawn(npm, [command, ...args], { stdio: 'inherit' });
 

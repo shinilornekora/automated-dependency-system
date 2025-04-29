@@ -1,7 +1,7 @@
 type Props = {
     name: string;
     version: string;
-    maintainer: string;
+    maintainer: string | null;
     readOnly: boolean;
     resolvedByGPT?: boolean,
     lastUsed?: number;
@@ -11,7 +11,7 @@ type Props = {
 export class Dependency {
     private readonly name: string;
     private version: string;
-    readonly maintainer: string;
+    readonly maintainer: string | null;
     private readOnly: boolean;
     private readonly resolvedByGPT: boolean | undefined;
     private lastUsed: number;

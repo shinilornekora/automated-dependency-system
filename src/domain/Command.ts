@@ -26,6 +26,12 @@ export class CommandHandler {
         this.dependencyManager = dependencyManager;
     }
 
+    /**
+     * Единый обработчик команд.
+     * Нужен, чтобы не размазывать логику сверки текущего пользователя по всему приложению.
+     * @param type
+     * @param payload
+     */
     handle({ type, payload }: HandlerProps) {
         const isCommonCommand = COMMON_COMMANDS[type]
         const isProtectedCommand = PROTECTED_COMMANDS[type];

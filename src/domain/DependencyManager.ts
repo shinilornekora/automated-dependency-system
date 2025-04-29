@@ -14,11 +14,16 @@ type Props = {
     melIgnoreList: string[];
 }
 
+/**
+ * Класс для уровня приложения.
+ * Содержит все необходимые обработчику команды.
+ * Взаимодействует напрямую с репозиторием.
+ */
 export class DependencyManager {
+    dependencyRepository: DependencyRepository;
     private readonly currentUser: User;
     private cveScanner: CVEScanner;
     private dependencyResolver: DependencyResolver;
-    dependencyRepository: DependencyRepository;
     private melIgnoreList: string[];
 
     constructor({

@@ -1,11 +1,10 @@
-import * as fs from 'fs';
-import * as path from 'path';
 import { Dependency } from '../domain/Dependency';
+import { FileSystemAPI } from "./FileSystemAPI";
 
-const DEP_FILE = path.join(process.cwd(), '.ads', 'dependencies.json');
-
-// Слой доступа к зависимостям.
-// Здесь берем все что было накидано в конфиг-файл и лочим
+/**
+ * Класс для управления зависимостями через ADS.
+ * Осуществляет сверку и перезапись зависимостей в .ads файлах
+ */
 export class DependencyRepository {
     private dependencies: Map<string, Dependency>;
 
@@ -14,58 +13,77 @@ export class DependencyRepository {
         this.load();
     }
 
-    // Читаем набор зависимостей из файла
-    load() {
+    /**
+     * Инициализация конфигурационным файлом.
+     */
+    private load() {
         try {
-            if (fs.existsSync(DEP_FILE)) {
-                const data = fs.readFileSync(DEP_FILE, 'utf-8');
-                const deps = JSON.parse(data);
-                
-                for (const dep of deps) {
-                    this.dependencies.set(dep.name, dep);
-                }
+            const deps = FileSystemAPI.readDependencyADSFile();
+
+            for (const dep of deps) {
+                this.dependencies.set(dep.name, dep);
             }
         } catch (err) {
             console.error(`Error loading dependencies`);
         }
     }
 
-    // Сохраняем все в файлик ADS
-    save() {
+    /**
+     * Сохранение новый зависимостей в файл.
+     */
+    private save() {
         try {
-            const dir = require('path').dirname(DEP_FILE);
-
-            if (!fs.existsSync(dir)) {
-                fs.mkdirSync(dir);
-            }
-
             const depsArray = Array.from(this.dependencies.values());
-            fs.writeFileSync(DEP_FILE, JSON.stringify(depsArray, null, 2), 'utf-8');
+
+            FileSystemAPI.saveDependencyADSFile(depsArray);
         } catch (err) {
             console.error(`Error saving dependencies`);
         }
     }
 
-    // Добавление одной зависимости
+    /**
+     * Добавляем одну зависимость.
+     * @param dependency
+     */
     add(dependency: Dependency) {
         this.dependencies.set(dependency.getName, dependency);
         this.save();
     }
 
-    // Получаем зависимость только по имени
-    get(name: string) {
+    /**
+     * Добавляем много зависимостей.
+     * @param deps
+     */
+    public addAll(deps: Dependency[]) {
+        for (const dep of deps) {
+            this.dependencies.set(dep.getName, dep);
+        }
+
+        this.save();
+    }
+
+    /**
+     * Получаем зависимость.
+     * Ключом будет являться имя зависимости.
+     * @param name
+     */
+    public get(name: string) {
         return this.dependencies.get(name);
     }
 
-    // Удаляем зависимость только по имени
-    remove(name: string) {
+    /**
+     * Убираем зависимость по имени.
+     * @param name
+     */
+    public remove(name: string) {
         this.dependencies.delete(name);
         this.save();
     }
 
-    // Получение всех зависимостей...
-    // TODO: наверное сделать служебным
-    getAll() {
+    /**
+     * Получаем все зависимости.
+     */
+    public getAll() {
         return Array.from(this.dependencies.values());
     }
 }
