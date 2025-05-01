@@ -1,6 +1,6 @@
 {
     "name": "automated-dependency-system",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "An example of ADS.",
     "main": "src/index.ts",
     "bin": {
