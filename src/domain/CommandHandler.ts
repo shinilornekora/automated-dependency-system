@@ -3,6 +3,7 @@ import { COMMON_COMMANDS } from "./types/commonCommands.js";
 import { PROTECTED_COMMANDS } from "./types/protectedCommands.js";
 import { User } from "./User.js";
 import {Dependency} from "./Dependency.js";
+import {HandlerPayloadMap} from "./types/HandlerPayloadMap.js";
 
 type CommandHandlerProps = {
     currentUser: User;
@@ -11,22 +12,18 @@ type CommandHandlerProps = {
 
 type CommandType = COMMON_COMMANDS | PROTECTED_COMMANDS;
 
-type HandlerPayloadMap = {
-    [COMMON_COMMANDS.CHANGE_CONFIGURATION_FILE]: unknown;
-    [COMMON_COMMANDS.CHANGE_EXISTING_DEPENDENCY]: Dependency;
-    [COMMON_COMMANDS.RESOLVE_CONFLICTS]: unknown;
-    [COMMON_COMMANDS.GET_MAINTAINER]: unknown;
-    [COMMON_COMMANDS.SHOW_THREE_VERSIONS]: { depName: string };
-    [PROTECTED_COMMANDS.DELETE_DEPENDENCY]: { depName: string };
-    [PROTECTED_COMMANDS.REPLACE_DEPENDENCY]: Dependency;
-    [PROTECTED_COMMANDS.ADD_DEPENDENCY]: Dependency;
-};
-
 type HandlerProps<T extends CommandType = CommandType> = {
     type: T;
     payload: HandlerPayloadMap[T];
 };
 
+/**
+ * Класс управления обработкой команд.
+ * Каждый метод вызывается на имя команды, сами они поделены на приватные и обычные.
+ * Логика валидации роли проходит на этом этапе, в методе handle.
+ *
+ * Карта нагрузочных типов ставится в соответствие благодаря HandlerPayloadMap.
+ */
 export class CommandHandler {
     dependencyManager: DependencyManager;
     currentUser: User;
@@ -46,15 +43,26 @@ export class CommandHandler {
 
         if (isProtectedCommand && this.currentUser.isPackageMaintainer) {
             // TS не может гарантировать соответствие сигнатур методов и типов — здесь это безопасно
+            // Собраться на несуществующей команде он все равно не даст ибо упадет проверка CommandType.
             return await (this as any)[type](payload);
         }
 
         if (isCommonCommand) {
-            // TS не может гарантировать соответствие сигнатур методов и типов — здесь это безопасно
+            // Аналогично комментарию выше, тут все безопасно.
             return await (this as any)[type](payload);
         }
 
         throw new Error('Command is protected from you!');
+    }
+
+    async initADS() {
+        await this.dependencyManager.syncWithPackageJson();
+    }
+
+    async commonADSCheck() {
+        await this.dependencyManager.checkAndResolveCVEs();
+        this.dependencyManager.removeUnusedDependencies();
+        this.dependencyManager.lockAllCurrentVersions();
     }
 
     async deleteDependency({ depName }: { depName: string }) {
@@ -70,6 +78,10 @@ export class CommandHandler {
         this.dependencyManager.addDependency(payload);
     }
 
+    async installDeps(payload: string[]) {
+        this.dependencyManager.installDeps(payload);
+    }
+
     async changeExistingDependencyHandler(payload: Dependency) {
         const secureVersions = await this.dependencyManager.getAllowedVersions(payload.getName);
 
@@ -81,11 +93,19 @@ export class CommandHandler {
         this.dependencyManager.addDependency(payload);
     }
 
+    async triggerADSBuild() {
+        this.dependencyManager.triggerADSBuild();
+    }
+
     async addDependency(payload: Dependency) {
         this.dependencyManager.addDependency(payload);
     }
 
     async showThreeVersions(depName: string) {
         return await this.dependencyManager.getAllowedVersions(depName);
+    }
+
+    async resolveConflicts() {
+        return this.dependencyManager.checkAndResolveCVEs()
     }
 }

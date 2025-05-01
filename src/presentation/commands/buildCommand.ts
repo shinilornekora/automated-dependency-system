@@ -5,6 +5,6 @@ export const buildCommand = (service: DependencyService): ConsoleCommand => ({
     command: 'build',
     description: "Run npm build with ADS checks",
     action: async () => {
-        await service.runNpmCommand('run', ['build']);
+        await service.triggerADSBuild();
     }
 })

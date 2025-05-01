@@ -3,6 +3,8 @@ import {User} from './User.js';
 import {CVEScanner} from '../infrastructure/CVEScanner.js';
 import {DependencyResolver} from './DependencyResolver.js';
 import {DependencyRepository} from '../infrastructure/DependencyRepository.js';
+import {FileSystemAPI} from "../infrastructure/FileSystemAPI.js";
+import {NpmService} from "../infrastructure/NpmService.js";
 
 type Props = {
     currentUser: User;
@@ -10,6 +12,7 @@ type Props = {
     dependencyResolver: DependencyResolver;
     dependencyRepository: DependencyRepository;
     melIgnoreList: string[];
+    npmService: NpmService;
 }
 
 /**
@@ -23,12 +26,14 @@ export class DependencyManager {
     private cveScanner: CVEScanner;
     private dependencyResolver: DependencyResolver;
     private melIgnoreList: string[];
+    private npmService: NpmService;
 
     constructor({
         dependencyRepository,
         dependencyResolver,
         cveScanner,
         currentUser,
+        npmService,
         melIgnoreList = []
     }: Props) {
         this.dependencyRepository = dependencyRepository;
@@ -36,34 +41,34 @@ export class DependencyManager {
         this.cveScanner = cveScanner;
         this.currentUser = currentUser;
         this.melIgnoreList = melIgnoreList;
+        this.npmService = npmService;
     }
 
     async updateConfigurationFile(payload: unknown) {
         // пока стабим
     }
 
-    // async syncWithPackageJson() {
-    //     const resolvedPackageJson = path.resolve('package.json');
-    //     const packageJSONContent = String(fs.readFileSync(resolvedPackageJson));
-    //
-    //     try {
-    //         Object.entries<string>(JSON.parse(packageJSONContent).dependencies)
-    //             .forEach(([name, version]) => {
-    //                 const dep = new Dependency({
-    //                     name,
-    //                     version,
-    //                     maintainer: this.currentUser.getName,
-    //                     readOnly: false,
-    //                     isLocal: false
-    //
-    //                 })
-    //                 this.addDependency(dep);
-    //             })
-    //     } catch (err) {
-    //         console.log(err);
-    //         throw new Error('Package.json is invalid or there is no alike file.');
-    //     }
-    // }
+    async syncWithPackageJson() {
+        try {
+            const packageJSONContent = FileSystemAPI.readPackageJson();
+
+            Object.entries<string>(JSON.parse(packageJSONContent).dependencies)
+                .forEach(([name, version]) => {
+                    const dep = new Dependency({
+                        name,
+                        version,
+                        maintainer: this.currentUser.getName,
+                        readOnly: false,
+                        isLocal: false
+
+                    })
+                    this.addDependency(dep);
+                })
+        } catch (err) {
+            console.log(err);
+            throw new Error('Package.json is invalid or there is no alike file.');
+        }
+    }
 
     addDependency(dependencyData: Dependency) {
         if (this.dependencyRepository.get(dependencyData.getName)) {
@@ -77,6 +82,18 @@ export class DependencyManager {
         console.log(`Dependency ${dep.getName} added with version ${dep.getVersion} as read-only.`);
 
         return dep;
+    }
+
+    installDeps(payload: string[]) {
+        this.npmService.run('install', payload);
+    }
+
+    cleanInstallDependencies() {
+        this.npmService.run('ci');
+    }
+
+    triggerADSBuild() {
+        this.npmService.run('run', ['build']);
     }
 
     removeDependency(dependencyName: string) {
@@ -129,6 +146,16 @@ export class DependencyManager {
                 console.error(`Error scanning ${dep.getName}`);
             }
         }
+    }
+
+    lockAllCurrentVersions() {
+        console.log("Locking all current dependency versions.");
+        const deps = this.dependencyRepository.getAll();
+        deps.forEach(dep => {
+            console.log(dep.getName);
+
+            dep.markReadOnly();
+        })
     }
 
     getSecureVersion(currentVersion: string) {

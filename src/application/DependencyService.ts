@@ -1,7 +1,6 @@
 import {DependencyManager} from "../domain/DependencyManager.js";
-import {NpmService} from "../infrastructure/NpmService.js";
 import {Dependency} from "../domain/Dependency.js";
-import {CommandHandler} from "../domain/Command.js";
+import {CommandHandler} from "../domain/CommandHandler.js";
 import {PROTECTED_COMMANDS} from "../domain/types/protectedCommands.js";
 import {COMMON_COMMANDS} from "../domain/types/commonCommands.js";
 
@@ -9,41 +8,52 @@ type Props = {
     dependencyManager: DependencyManager;
     log: (message: string) => void;
     commandHandler: CommandHandler;
-    npmService: NpmService;
 }
 
 export class DependencyService {
     private dependencyManager: DependencyManager;
     private commandHandler: CommandHandler;
-    private npmService: NpmService;
     private readonly log: (message: string) => void;
     
-    constructor({ dependencyManager, npmService, commandHandler, log }: Props) {
-      this.dependencyManager = dependencyManager;
-      this.commandHandler = commandHandler;
-      this.npmService = npmService;
-      this.log = log;
+    constructor({ dependencyManager, commandHandler, log }: Props) {
+        this.dependencyManager = dependencyManager;
+        this.commandHandler = commandHandler;
+        this.log = log;
     }
-  
-    async runADSChecks() {
-        await this.dependencyManager.checkAndResolveCVEs();
-        this.dependencyManager.removeUnusedDependencies();
-        this.lockAllCurrentVersions();
-    }
-  
-    lockAllCurrentVersions() {
-        this.log("Locking all current dependency versions.");
-        const deps = this.dependencyManager.dependencyRepository.getAll();
-        deps.forEach(dep => {
-            this.log(dep.getName);
 
-            dep.markReadOnly();
+    async initADS() {
+        return await this.commandHandler.handle({
+            type: COMMON_COMMANDS.INIT_ADS,
+            payload: {}
         })
     }
-  
-    async runNpmCommand(command: string, args: string[] = []) {
-      await this.runADSChecks();
-      this.npmService.run(command, args);
+
+    async triggerADSBuild() {
+        return await this.commandHandler.handle({
+            type: COMMON_COMMANDS.TRIGGER_ADS_BUILD,
+            payload: {}
+        })
+    }
+
+    async runADSChecks() {
+        return await this.commandHandler.handle({
+            type: COMMON_COMMANDS.INIT_ADS,
+            payload: {}
+        })
+    }
+
+    async installDeps(...payload: string[]) {
+        return await this.commandHandler.handle({
+            type: COMMON_COMMANDS.INSTALL_DEPENDENCIES,
+            payload
+        })
+    }
+
+    async cleanInstallDeps() {
+        return await this.commandHandler.handle({
+            type: COMMON_COMMANDS.CLEAN_INSTALL_DEPENDENCIES,
+            payload: {}
+        })
     }
 
     async getMaintainerUserName() {

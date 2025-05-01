@@ -7,6 +7,6 @@ export const installCommand = (dependencyService: DependencyService): ConsoleCom
     option: ['--args <args>', 'Additional arguments for npm install', ''],
     action: async (cmdObj) => {
         const args = cmdObj.args ? cmdObj.args.split(' ') : [];
-        await dependencyService.runNpmCommand('install', args);
+        await dependencyService.installDeps(args);
     }
 });

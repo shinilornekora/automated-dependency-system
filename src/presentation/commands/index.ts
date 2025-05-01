@@ -8,6 +8,7 @@ import {resolveCommand} from "./resolveCommand.js";
 import {allowedVersions} from "./allowedVersionsCommand.js";
 import {ConsoleCommand} from "./types.js";
 import {DependencyService} from "../../application/DependencyService.js";
+import {initCommand} from "./initCommand.js";
 
 export const commands = (service: DependencyService): ConsoleCommand[] => {
     return [
@@ -16,6 +17,7 @@ export const commands = (service: DependencyService): ConsoleCommand[] => {
         buildCommand,
         cleanInstallCommand,
         addCommand,
+        initCommand,
         removeCommand,
         resolveCommand,
         allowedVersions,

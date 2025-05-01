@@ -6,7 +6,7 @@ import { DependencyManager } from './domain/DependencyManager.js';
 import { DependencyResolver } from './domain/DependencyResolver.js';
 import { DependencyService } from './application/DependencyService.js';
 import { User } from "./domain/User.js";
-import {CommandHandler} from "./domain/Command.js";
+import {CommandHandler} from "./domain/CommandHandler.js";
 
 // Функция, которую можно импортировать в любой пакет.
 export function createADS(currentUsername: string) {
@@ -21,7 +21,8 @@ export function createADS(currentUsername: string) {
         dependencyResolver,
         cveScanner,
         currentUser,
-        melIgnoreList
+        melIgnoreList,
+        npmService
     });
 
     const commandHandler = new CommandHandler({ currentUser, dependencyManager });
@@ -30,7 +31,6 @@ export function createADS(currentUsername: string) {
         dependencyManager,
         log: console.log,
         commandHandler,
-        npmService
     });
 
     return {
