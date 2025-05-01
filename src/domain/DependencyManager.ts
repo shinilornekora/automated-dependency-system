@@ -15,9 +15,9 @@ type Props = {
 }
 
 /**
- * Класс для уровня приложения.
- * Содержит все необходимые обработчику команды.
- * Взаимодействует напрямую с репозиторием.
+ * Класс для управления операций с зависимостями.
+ * Вызывается исключительно обработчиком команд.
+ * Взаимодействует напрямую с инфраструктурой.
  */
 export class DependencyManager {
     dependencyRepository: DependencyRepository;
@@ -44,34 +44,30 @@ export class DependencyManager {
         // пока стабим
     }
 
-    async syncWithPackageJson() {
-        const resolvedPackageJson = path.resolve('package.json');
-        const packageJSONContent = String(fs.readFileSync(resolvedPackageJson));
-
-        try {
-            Object.entries<string>(JSON.parse(packageJSONContent).dependencies)
-                .forEach(([name, version]) => {
-                    const dep = new Dependency({
-                        name,
-                        version,
-                        maintainer: this.currentUser.getName,
-                        readOnly: false,
-                        isLocal: false
-
-                    })
-                    this.addDependency(dep);
-                })
-        } catch (err) {
-            console.log(err);
-            throw new Error('Package.json is invalid or there is no alike file.');
-        }
-    }
+    // async syncWithPackageJson() {
+    //     const resolvedPackageJson = path.resolve('package.json');
+    //     const packageJSONContent = String(fs.readFileSync(resolvedPackageJson));
+    //
+    //     try {
+    //         Object.entries<string>(JSON.parse(packageJSONContent).dependencies)
+    //             .forEach(([name, version]) => {
+    //                 const dep = new Dependency({
+    //                     name,
+    //                     version,
+    //                     maintainer: this.currentUser.getName,
+    //                     readOnly: false,
+    //                     isLocal: false
+    //
+    //                 })
+    //                 this.addDependency(dep);
+    //             })
+    //     } catch (err) {
+    //         console.log(err);
+    //         throw new Error('Package.json is invalid or there is no alike file.');
+    //     }
+    // }
 
     addDependency(dependencyData: Dependency) {
-        if (!this.currentUser.isPackageMaintainer) {
-            throw new Error(`Only the maintainer (${dependencyData.maintainer}) can add dependency ${dependencyData.getName}.`);
-        }
-
         if (this.dependencyRepository.get(dependencyData.getName)) {
             return console.log(`Dependency ${dependencyData.getName} already exists.`);
         }
@@ -92,16 +88,8 @@ export class DependencyManager {
             throw new Error(`Dependency ${dependencyName} not found.`);
         }
 
-        if (!this.currentUser.isPackageMaintainer) {
-            throw new Error(`Only the maintainer (${dep.maintainer}) can remove dependency ${dependencyName}.`);
-        }
-
         this.dependencyRepository.remove(dependencyName);
         console.log(`Dependency ${dependencyName} removed.`);
-    }
-
-    blockInstallOperation() {
-        throw new Error("Install-changing operations are blocked by ADS. Use ADS commands to manage dependencies.");
     }
 
     async checkAndResolveCVEs() {
