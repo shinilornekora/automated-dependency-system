@@ -1,9 +1,9 @@
-import {DependencyManager} from "../domain/DependencyManager";
-import {NpmService} from "../infrastructure/NpmService";
-import {Dependency} from "../domain/Dependency";
-import {CommandHandler} from "../domain/Command";
-import {PROTECTED_COMMANDS} from "../domain/types/protectedCommands";
-import {COMMON_COMMANDS} from "../domain/types/commonCommands";
+import {DependencyManager} from "../domain/DependencyManager.js";
+import {NpmService} from "../infrastructure/NpmService.js";
+import {Dependency} from "../domain/Dependency.js";
+import {CommandHandler} from "../domain/Command.js";
+import {PROTECTED_COMMANDS} from "../domain/types/protectedCommands.js";
+import {COMMON_COMMANDS} from "../domain/types/commonCommands.js";
 
 type Props = {
     dependencyManager: DependencyManager;

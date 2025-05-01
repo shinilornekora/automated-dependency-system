@@ -1,12 +1,12 @@
-import { FileSystemAPI } from './infrastructure/FileSystemAPI';
-import { DependencyRepository } from './infrastructure/DependencyRepository';
-import { CVEScanner } from './infrastructure/CVEScanner';
-import { NpmService } from './infrastructure/NpmService';
-import { DependencyManager } from './domain/DependencyManager';
-import { DependencyResolver } from './domain/DependencyResolver';
-import { DependencyService } from './application/DependencyService';
-import { User } from "./domain/User";
-import {CommandHandler} from "./domain/Command";
+import { FileSystemAPI } from './infrastructure/FileSystemAPI.js';
+import { DependencyRepository } from './infrastructure/DependencyRepository.js';
+import { CVEScanner } from './infrastructure/CVEScanner.js';
+import { NpmService } from './infrastructure/NpmService.js';
+import { DependencyManager } from './domain/DependencyManager.js';
+import { DependencyResolver } from './domain/DependencyResolver.js';
+import { DependencyService } from './application/DependencyService.js';
+import { User } from "./domain/User.js";
+import {CommandHandler} from "./domain/Command.js";
 
 // Функция, которую можно импортировать в любой пакет.
 export function createADS(currentUsername: string) {

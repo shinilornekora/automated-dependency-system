@@ -1,9 +1,5 @@
 import { spawn } from 'child_process';
-import { User } from "../domain/User";
-
-const RESTRICTED_COMMANDS = [
-    'install', 'i', 'remove', 'rm'
-]
+import { User } from "../domain/User.js";
 
 /**
  * Класс для взаимодействия с пакетным менеджером.

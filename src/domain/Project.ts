@@ -1,5 +1,5 @@
-import { User } from "./User";
-import { Dependency } from "./Dependency";
+import { User } from "./User.js";
+import { Dependency } from "./Dependency.js";
 
 type ProjectProps = {
     dependencies: Dependency[];

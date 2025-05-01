@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import {Dependency} from "../domain/Dependency";
+import {Dependency} from "../domain/Dependency.js";
 
 const melIgnoreDefaultPath = path.join(process.cwd(), '.melignore');
 const packageJsonPath = path.join(process.cwd(), 'package.json');

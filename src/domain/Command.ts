@@ -1,8 +1,8 @@
-import { DependencyManager } from "./DependencyManager";
-import { COMMON_COMMANDS } from "./types/commonCommands";
-import { PROTECTED_COMMANDS } from "./types/protectedCommands";
-import { User } from "./User";
-import {Dependency} from "./Dependency";
+import { DependencyManager } from "./DependencyManager.js";
+import { COMMON_COMMANDS } from "./types/commonCommands.js";
+import { PROTECTED_COMMANDS } from "./types/protectedCommands.js";
+import { User } from "./User.js";
+import {Dependency} from "./Dependency.js";
 
 type CommandHandlerProps = {
     currentUser: User;

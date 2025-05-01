@@ -1,10 +1,8 @@
-import {Dependency} from './Dependency';
-import * as path from 'path';
-import * as fs from 'fs';
-import {User} from './User';
-import {CVEScanner} from '../infrastructure/CVEScanner';
-import {DependencyResolver} from './DependencyResolver';
-import {DependencyRepository} from '../infrastructure/DependencyRepository';
+import {Dependency} from './Dependency.js';
+import {User} from './User.js';
+import {CVEScanner} from '../infrastructure/CVEScanner.js';
+import {DependencyResolver} from './DependencyResolver.js';
+import {DependencyRepository} from '../infrastructure/DependencyRepository.js';
 
 type Props = {
     currentUser: User;

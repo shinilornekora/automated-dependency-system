@@ -19,8 +19,8 @@
         "ddd"
     ],
     "author": "Asine Lornekora",
-    "type": "commonjs",
     "license": "MIT",
+    "type": "module",
     "dependencies": {
         "@lume/kiwi": "^0.4.4",
         "commander": "^10.0.0",

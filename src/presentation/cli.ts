@@ -1,21 +1,25 @@
 #!/usr/bin/env node
 import { program } from 'commander';
-import { createADS } from '../index';
-import {commands } from "./commands";
+import { createADS } from '../index.js';
+import { commands } from "./commands/index.js";
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const programPackageJSON = require("../../package.json");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-/**
- * Пытаемся определить текущего пользователя.
- */
-const currentUsername = process.env.ADS_MAINTAINER || process.env.USER || 'nobody';
+const packageJSONPath = path.join(__dirname, '../../package.json');
+const programPackageJSON = JSON.parse(fs.readFileSync(packageJSONPath).toString());
+
+const currentUsername = process.env.ADS_MAINTAINER ?? process.env.USER ?? 'nobody';
 const { dependencyService } = createADS(currentUsername);
 
 const rules = commands(dependencyService);
 
 program
-  .version(programPackageJSON.version)
-  .description("Automated Dependency System (ADS) CLI");
+    .version(programPackageJSON.version)
+    .description("Automated Dependency System (ADS) CLI");
 
 for (const { command, description, action, option } of rules) {
     if (option) {

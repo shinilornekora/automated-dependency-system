@@ -1,13 +1,13 @@
-import { installCommand } from "./installCommand";
-import {checkCommand} from "./checkCommand";
-import {buildCommand} from "./buildCommand";
-import {cleanInstallCommand} from "./cleanInstallCommand";
-import {addCommand} from "./addCommand";
-import {removeCommand} from "./removeCommand";
-import {resolveCommand} from "./resolveCommand";
-import {allowedVersions} from "./allowedVersionsCommand";
-import {ConsoleCommand} from "./types";
-import {DependencyService} from "../../application/DependencyService";
+import { installCommand } from "./installCommand.js";
+import {checkCommand} from "./checkCommand.js";
+import {buildCommand} from "./buildCommand.js";
+import {cleanInstallCommand} from "./cleanInstallCommand.js";
+import {addCommand} from "./addCommand.js";
+import {removeCommand} from "./removeCommand.js";
+import {resolveCommand} from "./resolveCommand.js";
+import {allowedVersions} from "./allowedVersionsCommand.js";
+import {ConsoleCommand} from "./types.js";
+import {DependencyService} from "../../application/DependencyService.js";
 
 export const commands = (service: DependencyService): ConsoleCommand[] => {
     return [

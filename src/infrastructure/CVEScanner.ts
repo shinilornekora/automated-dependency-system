@@ -1,4 +1,4 @@
-import { Dependency } from "../domain/Dependency";
+import { Dependency } from "../domain/Dependency.js";
 import { exec } from 'child_process';
 
 import * as semver from 'semver';

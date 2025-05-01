@@ -1,5 +1,5 @@
-import { Dependency } from '../domain/Dependency';
-import { FileSystemAPI } from "./FileSystemAPI";
+import { Dependency } from '../domain/Dependency.js';
+import { FileSystemAPI } from "./FileSystemAPI.js";
 
 /**
  * Класс для управления зависимостями через ADS.

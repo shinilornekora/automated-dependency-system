@@ -1,6 +1,6 @@
-import * as fs from 'fs';
-import * as path from 'path';
 import * as kiwi from '@lume/kiwi';
+
+import type { Solver, Variable } from "@lume/kiwi";
 
 type DependencySection = 'dependencies' | 'devDependencies' | 'peerDependencies';
 type VersionSpec = { op: string, major: number, minor: number, patch: number };
@@ -35,8 +35,8 @@ function collectAllConstraints(packageJson: any): { [pkg: string]: VersionSpec[]
 }
 
 function addConstraints(
-    solver: kiwi.Solver,
-    variables: { [pkg: string]: kiwi.Variable },
+    solver: Solver,
+    variables: { [pkg: string]: Variable },
     pkg: string,
     specs: VersionSpec[]
 ) {
@@ -82,7 +82,7 @@ export class DependencyResolver {
 
     resolve() {
         const pkgs = Object.keys(this.constraints);
-        const variables: { [pkg: string]: kiwi.Variable } = {};
+        const variables: { [pkg: string]: Variable } = {};
         pkgs.forEach(pkg => {
             variables[pkg] = new kiwi.Variable(pkg);
         });
