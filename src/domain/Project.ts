@@ -37,4 +37,8 @@ export class Project {
     public get getDependencies() {
         return this.dependencies;
     }
+
+    public get maintainer() {
+        return this.packageJSON.author;
+    }
 }

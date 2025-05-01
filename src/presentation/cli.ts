@@ -1,16 +1,15 @@
 #!/usr/bin/env node
 import { program } from 'commander';
 import { createADS } from '../index';
-import { Dependency } from "../domain/Dependency";
+import {commands } from "./commands";
 
 const programPackageJSON = require("../../package.json");
-import {commands} from "./commands";
 
 /**
  * Пытаемся определить текущего пользователя.
  */
 const currentUsername = process.env.ADS_MAINTAINER || process.env.USER || 'nobody';
-const { dependencyManager, dependencyService } = createADS(currentUsername);
+const { dependencyService } = createADS(currentUsername);
 
 const rules = commands(dependencyService);
 

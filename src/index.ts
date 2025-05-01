@@ -6,6 +6,7 @@ import { DependencyManager } from './domain/DependencyManager';
 import { DependencyResolver } from './domain/DependencyResolver';
 import { DependencyService } from './application/DependencyService';
 import { User } from "./domain/User";
+import {CommandHandler} from "./domain/Command";
 
 // Функция, которую можно импортировать в любой пакет.
 export function createADS(currentUsername: string) {
@@ -23,8 +24,12 @@ export function createADS(currentUsername: string) {
         melIgnoreList
     });
 
+    const commandHandler = new CommandHandler({ currentUser, dependencyManager });
+
     const dependencyService = new DependencyService({
         dependencyManager,
+        log: console.log,
+        commandHandler,
         npmService
     });
 

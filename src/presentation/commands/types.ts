@@ -1,5 +1,3 @@
-import { DependencyService } from "../../application/DependencyService";
-
 export type ConsoleCommand = {
     command: string;
     description: string;

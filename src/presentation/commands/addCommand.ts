@@ -9,7 +9,7 @@ export const addCommand = (service: DependencyService): ConsoleCommand => ({
     description: "Add a new dependency via ADS (only for maintainers)",
     action: async ([ name, version ]) => {
         try {
-            const userName = service.getMaintanerUserName();
+            const userName = await service.getMaintainerUserName();
             const dep = new Dependency({
                 name,
                 version,
@@ -18,7 +18,7 @@ export const addCommand = (service: DependencyService): ConsoleCommand => ({
                 isLocal: false
             })
 
-            service.addDependency(dep);
+            await service.addDependency(dep);
             console.log(`Added dependency ${name}@${version}.`);
         } catch (err) {
             console.error(`Failed to add dependency ${name}.`);
