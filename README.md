@@ -21,15 +21,40 @@ export ADS_MAINTAINER=your_username
 ```
 Instead of calling npm directly, use the ADS CLI to trigger ADS checks automatically:
 
+### Common ADS check:
+- CVE scanning
+- Cleaning unused dependencies
+- Locking all current dependencies in ADS file
+
+### All ADS CLI commands
+
 ```bash
-ads check                 # Run all ADS checks (CVE scanning, cleaning, locking)
-ads install               # Run npm install (only from package.json)
-ads build                 # Run npm build (via "npm run build")
-ads clean-install         # Run npm ci
-ads add foo 1.2.3         # Add a new dependency (if you’re the maintainer)
-ads remove foo            # Remove a dependency (if you’re the maintainer)
-ads allowed-versions foo  # List the three most recent versions available for "foo"
+ads init                  # [UP] Initialize ADS with local package.json
+
+ads resolve               # [UP] Solve dependencies conflict of current package
+
+ads check                 # [UP] Run all ADS checks (CVE scanning, cleaning, locking)
+
+ads install               # [SP] Run npm install with ADS check 
+                          # [CONDITION] if not-maintainer, then block adding operations
+
+ads build                 # [UP] Run npm build with ADS check
+
+ads clean-install         # [UP] Run npm ci
+
+ads add foo 1.2.3         # [FP] Add a new dependency to ads file
+                          # [CONDITION]  if not-maintainer, then block
+                          
+ads remove foo            # [FP] Remove a dependency from ads file
+                          # [CONDITION]  if not-maintainer, then block
+                          
+ads allowed-versions foo  # [UP] List the three most recent versions available for "foo"
 ```
+
+Acronyms
+- UP = unprotected - any developer can execute it
+- SP = semi-protected - 
+- FP = fully-protected
 
 ### Integration:
 You can also import and use ADS programmatically in your own build scripts:
