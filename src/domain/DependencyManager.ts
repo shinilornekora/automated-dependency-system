@@ -52,7 +52,7 @@ export class DependencyManager {
         try {
             const packageJSONContent = FileSystemAPI.readPackageJson();
 
-            Object.entries<string>(JSON.parse(packageJSONContent).dependencies)
+            Object.entries<string>(packageJSONContent.dependencies)
                 .forEach(([name, version]) => {
                     const dep = new Dependency({
                         name,

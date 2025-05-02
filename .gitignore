@@ -1,3 +1,4 @@
 # dependencies
+/.ads
 /node_modules
 /dist
