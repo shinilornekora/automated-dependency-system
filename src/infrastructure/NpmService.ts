@@ -1,7 +1,7 @@
 import { spawn } from 'child_process';
 import { User } from "../domain/User.js";
-import {SpawnOptions} from "node:child_process";
-import {Readable} from "node:stream";
+import { SpawnOptions } from "node:child_process";
+import { Readable } from "node:stream";
 
 /**
  * Класс для взаимодействия с пакетным менеджером.

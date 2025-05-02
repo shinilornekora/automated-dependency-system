@@ -37,6 +37,7 @@ export class DependencyRepository {
 
             FileSystemAPI.saveDependencyADSFile(depsArray);
         } catch (err) {
+            console.log(err)
             console.error(`Error saving dependencies`);
         }
     }

@@ -2,8 +2,8 @@ import { DependencyManager } from "./DependencyManager.js";
 import { COMMON_COMMANDS } from "./types/commonCommands.js";
 import { PROTECTED_COMMANDS } from "./types/protectedCommands.js";
 import { User } from "./User.js";
-import {Dependency} from "./Dependency.js";
-import {HandlerPayloadMap} from "./types/HandlerPayloadMap.js";
+import { Dependency } from "./Dependency.js";
+import { HandlerPayloadMap } from "./types/HandlerPayloadMap.js";
 
 type CommandHandlerProps = {
     currentUser: User;
@@ -37,9 +37,11 @@ export class CommandHandler {
         const isCommonCommand = Object.values(COMMON_COMMANDS).includes(type as COMMON_COMMANDS);
         const isProtectedCommand = Object.values(PROTECTED_COMMANDS).includes(type as PROTECTED_COMMANDS);
 
-        if (payload) {
-            console.log(`type: ${type}`);
-            console.log(`payload: ${JSON.stringify(payload)}`);
+        if (payload && process.env.DEBUG) {
+            console.log(`\n
+                type: ${type}
+                payload: ${JSON.stringify(payload)}
+            \n`);
         }
 
         if (!isCommonCommand && !isProtectedCommand) {
@@ -57,7 +59,12 @@ export class CommandHandler {
             return await (this as any)[type](payload);
         }
 
-        throw new Error('Command is protected from you!');
+        console.log(`\n
+            You are trying to access protected command.
+            You are not the author of this package. Operation aborted.
+        \n`);
+
+        throw new Error('restricted_access');
     }
 
     async initADS() {
@@ -112,5 +119,9 @@ export class CommandHandler {
 
     async resolveConflicts() {
         return this.dependencyManager.checkAndResolveCVEs()
+    }
+
+    async getMaintainer() {
+        return this.currentUser.isPackageMaintainer;
     }
 }

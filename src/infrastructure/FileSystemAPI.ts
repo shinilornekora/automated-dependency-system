@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import {Dependency} from "../domain/Dependency.js";
+import { Dependency } from "../domain/Dependency.js";
 
 const melIgnoreDefaultPath = path.join(process.cwd(), '.melignore');
 const packageJsonPath = path.join(process.cwd(), 'package.json');
@@ -52,6 +52,7 @@ export class FileSystemAPI {
             }
             return null;
         } catch (err) {
+            console.error(err)
             console.error(`Error reading package.json.`);
             return null;
         }
@@ -59,7 +60,7 @@ export class FileSystemAPI {
 
     public static saveDependencyADSFile(dependencies: Dependency[], filePath = dependencyPath) {
         try {
-            const dir = require('path').dirname(filePath);
+            const dir = path.dirname(filePath);
 
             if (!fs.existsSync(dir)) {
                 fs.mkdirSync(dir);
@@ -68,6 +69,7 @@ export class FileSystemAPI {
             const depsArray = Array.from(dependencies);
             fs.writeFileSync(filePath, JSON.stringify(depsArray, null, 2), 'utf-8');
         } catch (err) {
+            console.log(err);
             console.error(`Error saving dependencies`);
             return null;
         }

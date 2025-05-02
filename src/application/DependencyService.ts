@@ -1,8 +1,8 @@
-import {DependencyManager} from "../domain/DependencyManager.js";
-import {Dependency} from "../domain/Dependency.js";
-import {CommandHandler} from "../domain/CommandHandler.js";
-import {PROTECTED_COMMANDS} from "../domain/types/protectedCommands.js";
-import {COMMON_COMMANDS} from "../domain/types/commonCommands.js";
+import { DependencyManager } from "../domain/DependencyManager.js";
+import { Dependency } from "../domain/Dependency.js";
+import { CommandHandler } from "../domain/CommandHandler.js";
+import { PROTECTED_COMMANDS } from "../domain/types/protectedCommands.js";
+import { COMMON_COMMANDS } from "../domain/types/commonCommands.js";
 
 type Props = {
     dependencyManager: DependencyManager;

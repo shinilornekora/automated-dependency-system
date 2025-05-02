@@ -1,5 +1,5 @@
 import { ConsoleCommand } from "./types.js";
-import {DependencyService} from "../../application/DependencyService.js";
+import { DependencyService } from "../../application/DependencyService.js";
 
 export const allowedVersions = (service: DependencyService): ConsoleCommand => ({
     command: 'allowed-versions <name>',

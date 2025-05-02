@@ -69,9 +69,8 @@ export class CVEScanner {
      * @param packageName
      */
     getLatestVersion(packageName: string) {
-        const { execSync } = require('child_process');
         try {
-            return execSync(`npm view ${packageName} version`).toString().trim();
+            return exec(`npm view ${packageName} version`).toString().trim();
         } catch (err) {
             console.error(`Error fetching latest version for ${packageName}`);
             return null;

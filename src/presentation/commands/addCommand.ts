@@ -1,6 +1,6 @@
-import {Dependency} from "../../domain/Dependency.js";
-import {ConsoleCommand} from "./types.js";
-import {DependencyService} from "../../application/DependencyService.js";
+import { Dependency } from "../../domain/Dependency.js";
+import { ConsoleCommand } from "./types.js";
+import { DependencyService } from "../../application/DependencyService.js";
 
 export const addCommand = (service: DependencyService): ConsoleCommand => ({
     command: 'add <name> <version>',

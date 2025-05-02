@@ -1,5 +1,5 @@
-import {ConsoleCommand} from "./types.js";
-import {DependencyService} from "../../application/DependencyService.js";
+import { ConsoleCommand } from "./types.js";
+import { DependencyService } from "../../application/DependencyService.js";
 
 export const removeCommand = (service: DependencyService): ConsoleCommand => ({
     command: 'remove <name>',
@@ -9,6 +9,7 @@ export const removeCommand = (service: DependencyService): ConsoleCommand => ({
             await service.removeDependency(name);
             console.log(`Removed dependency ${name}.`);
         } catch (err) {
+            console.log(err)
             console.error(`Error while trying to remove dependency ${name}.`);
         }
     }

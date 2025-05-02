@@ -6,7 +6,7 @@ import { DependencyManager } from './domain/DependencyManager.js';
 import { DependencyResolver } from './domain/DependencyResolver.js';
 import { DependencyService } from './application/DependencyService.js';
 import { User } from "./domain/User.js";
-import {CommandHandler} from "./domain/CommandHandler.js";
+import { CommandHandler } from "./domain/CommandHandler.js";
 
 // Функция, которую можно импортировать в любой пакет.
 export function createADS(currentUsername: string) {

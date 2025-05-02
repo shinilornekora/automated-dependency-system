@@ -135,7 +135,7 @@ export class DependencyManager {
                     // If the vulnerability is fixed, attempt to upgrade.
                     const latestVersion = cveReport.fixedVersion;
                     console.log(`Vulnerability fixed for ${dep.getName}. Attempting upgrade from ${dep.getVersion} to ${latestVersion}.`);
-                    if (!dep.isReadOnly) {
+                    if (!dep.isReadOnly && latestVersion) {
                         dep.updateVersion(latestVersion);
                     } else {
                         console.warn(`Dependency ${dep.getName} is read-only; cannot upgrade.`);

@@ -1,4 +1,4 @@
-import {FileSystemAPI} from "../infrastructure/FileSystemAPI.js";
+import { FileSystemAPI } from "../infrastructure/FileSystemAPI.js";
 
 type UserProps = {
     name: string;
