@@ -195,24 +195,19 @@ export class DependencyManager {
     }
 
 
-    async getAllowedVersions(dependencyName: string) {
-        console.log(`Fetching allowed versions for ${dependencyName} (three most recent).`);
-        const { execSync } = require('child_process');
-
+    async getAllowedVersions({ depName }: { depName: string }) {
         try {
-            const output = execSync(`npm view ${dependencyName} versions --json`).toString();
-            const versions = JSON.parse(output) as string[];
+            console.log(`Fetching allowed versions for ${depName} (three most recent).`);
+            if (depName.isPrototypeOf(Object)) {
+                console.log(JSON.stringify(depName))
+            }
+            const allVersions = await this.npmService.getAllowedSemverVersions(depName);
+            const versions = allVersions.slice(allVersions.length - 3);
 
-            // Регулярное выражение для фильтрации версий в формате x.x.x
-            const semverRegex = /^\d+\.\d+\.\d+$/;
-
-            // Фильтрация версий и возврат трех последних
+            console.log('Resolved versions: ', versions);
             return versions
-                .filter(version => semverRegex.test(version))
-                .slice(-3)
-                .reverse();
         } catch (err) {
-            console.error(`Error fetching versions for ${dependencyName}`);
+            console.error(`Error fetching versions for ${depName}`);
             return [];
         }
     }

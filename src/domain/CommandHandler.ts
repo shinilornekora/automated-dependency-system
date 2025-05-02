@@ -37,6 +37,11 @@ export class CommandHandler {
         const isCommonCommand = Object.values(COMMON_COMMANDS).includes(type as COMMON_COMMANDS);
         const isProtectedCommand = Object.values(PROTECTED_COMMANDS).includes(type as PROTECTED_COMMANDS);
 
+        if (payload) {
+            console.log(`type: ${type}`);
+            console.log(`payload: ${JSON.stringify(payload)}`);
+        }
+
         if (!isCommonCommand && !isProtectedCommand) {
             throw new Error('No such command exist.');
         }
@@ -83,9 +88,9 @@ export class CommandHandler {
     }
 
     async changeExistingDependencyHandler(payload: Dependency) {
-        const secureVersions = await this.dependencyManager.getAllowedVersions(payload.getName);
+        const secureVersions = await this.dependencyManager.getAllowedVersions({ depName: payload.getName });
 
-        if (!secureVersions.includes(payload.getVersion)) {
+        if (secureVersions && !secureVersions.includes(payload.getVersion)) {
             throw new Error('You are trying to install deps that beyond last three versions.');
         }
 
@@ -101,8 +106,8 @@ export class CommandHandler {
         this.dependencyManager.addDependency(payload);
     }
 
-    async showThreeVersions(depName: string) {
-        return await this.dependencyManager.getAllowedVersions(depName);
+    async showThreeVersions({ depName }: HandlerPayloadMap['showThreeVersions']) {
+        return await this.dependencyManager.getAllowedVersions({ depName });
     }
 
     async resolveConflicts() {
