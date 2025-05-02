@@ -1,22 +1,18 @@
-import { DependencyManager } from "../domain/DependencyManager.js";
 import { Dependency } from "../domain/Dependency.js";
 import { CommandHandler } from "../domain/CommandHandler.js";
 import { PROTECTED_COMMANDS } from "../domain/types/protectedCommands.js";
 import { COMMON_COMMANDS } from "../domain/types/commonCommands.js";
 
 type Props = {
-    dependencyManager: DependencyManager;
     log: (message: string) => void;
     commandHandler: CommandHandler;
 }
 
 export class DependencyService {
-    private dependencyManager: DependencyManager;
     private commandHandler: CommandHandler;
     private readonly log: (message: string) => void;
     
-    constructor({ dependencyManager, commandHandler, log }: Props) {
-        this.dependencyManager = dependencyManager;
+    constructor({ commandHandler, log }: Props) {
         this.commandHandler = commandHandler;
         this.log = log;
     }

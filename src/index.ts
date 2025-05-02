@@ -28,7 +28,6 @@ export function createADS(currentUsername: string) {
     const commandHandler = new CommandHandler({ currentUser, dependencyManager });
 
     const dependencyService = new DependencyService({
-        dependencyManager,
         log: console.log,
         commandHandler,
     });
