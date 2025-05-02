@@ -17,7 +17,11 @@ npm install -g automated-dependency-system
 - Set the maintainer (for adding/removing dependencies) by setting an environment variable, for example:
 
 ```bash
-export ADS_MAINTAINER=your_username
+# *nix
+export USER=your_username
+
+# Windows
+$env:USER=your_username
 ```
 Instead of calling npm directly, use the ADS CLI to trigger ADS checks automatically:
 

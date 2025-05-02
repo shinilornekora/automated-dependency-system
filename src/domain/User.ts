@@ -2,7 +2,6 @@ import { FileSystemAPI } from "../infrastructure/FileSystemAPI.js";
 
 type UserProps = {
     name: string;
-    isPackageMaintainer: boolean;
 }
 
 /**
@@ -12,9 +11,9 @@ export class User {
     public isPackageMaintainer: Boolean;
     private readonly name: string;
 
-    constructor({ name, isPackageMaintainer }: UserProps) {
+    constructor({ name }: UserProps) {
         this.name = name;
-        this.isPackageMaintainer = isPackageMaintainer;
+        this.isPackageMaintainer = this.checkIfCurrentPackageMaintainsByUser() || false;
     }
 
     /**
@@ -23,7 +22,7 @@ export class User {
      */
     public checkIfCurrentPackageMaintainsByUser() {
         try {
-            const packageJSONFile = JSON.parse(FileSystemAPI.readPackageJson());
+            const packageJSONFile = FileSystemAPI.readPackageJson();
 
             if (!packageJSONFile.author) {
                 console.error('Current package.json has no author field.');

@@ -10,7 +10,7 @@ import { CommandHandler } from "./domain/CommandHandler.js";
 
 // Функция, которую можно импортировать в любой пакет.
 export function createADS(currentUsername: string) {
-    const currentUser = new User({ name: currentUsername, isPackageMaintainer: false });
+    const currentUser = new User({ name: currentUsername });
     const melIgnoreList = FileSystemAPI.readMelIgnore();
     const dependencyRepository = new DependencyRepository();
     const cveScanner = new CVEScanner();

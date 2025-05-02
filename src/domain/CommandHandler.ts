@@ -48,7 +48,7 @@ export class CommandHandler {
             throw new Error('No such command exist.');
         }
 
-        if (isProtectedCommand && this.currentUser.isPackageMaintainer) {
+        if (isProtectedCommand && this.currentUser.checkIfCurrentPackageMaintainsByUser()) {
             // TS не может гарантировать соответствие сигнатур методов и типов — здесь это безопасно
             // Собраться на несуществующей команде он все равно не даст ибо упадет проверка CommandType.
             return await (this as any)[type](payload);
