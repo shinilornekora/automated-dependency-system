@@ -34,6 +34,7 @@ export class DependencyRepository {
      */
     private save() {
         try {
+            const melIngnoreFile = FileSystemAPI.readMelIgnore();
             const packageJSON = FileSystemAPI.readPackageJson();
             const depsArray = Array.from(this.dependencies.values());
             const newDeps: Record<string, string> = {};
@@ -44,14 +45,28 @@ export class DependencyRepository {
                     return;
                 }
 
-                newDeps[dep.getName] = dep.getVersion
+                newDeps[dep.getName] = dep.getVersion;
             });
 
             FileSystemAPI.saveDependencyADSFile(depsArray);
 
-            packageJSON.dependencies = newDeps;
+            const newDepsNames = Object.keys(newDeps);
 
-            FileSystemAPI.writePackageJson(packageJSON);
+            for (const ignoredDepName of melIngnoreFile) {
+                const droppedIgnoredDep = !newDepsNames.includes(ignoredDepName);
+                const ignoredDepExists = packageJSON.dependencies[ignoredDepName]
+
+                // Система попыталась удалить защищенную зависимость.
+                // Не даем так сделать.
+                if (droppedIgnoredDep && ignoredDepExists) {
+                    newDeps[ignoredDepName] = packageJSON.dependencies[ignoredDepName].version;
+                }
+            }
+
+            FileSystemAPI.writePackageJson({
+                ...packageJSON,
+                dependencies: newDeps
+            });
         } catch (err) {
             console.log(err)
             console.error(`Error saving dependencies`);
@@ -63,6 +78,12 @@ export class DependencyRepository {
      * @param dependency
      */
     add(dependency: Dependency) {
+        const melignoreFile = FileSystemAPI.readMelIgnore();
+
+        if (melignoreFile.includes(dependency.getName)) {
+            throw new Error(`Dependency ${dependency.getName} is included in .melignore file and won\'t be added to ADS control unit.`);
+        }
+
         this.dependencies.set(dependency.getName, dependency);
         this.save();
     }

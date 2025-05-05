@@ -79,8 +79,13 @@ export class DependencyManager {
         const dep = dependencyData;
         dep.markReadOnly();
 
-        this.dependencyRepository.add(dep);
-        console.log(`Dependency ${dep.getName} added with version ${dep.getVersion} as read-only.`);
+        try {
+            this.dependencyRepository.add(dep);
+            console.log(`Dependency ${dep.getName} added with version ${dep.getVersion} as read-only.`);
+        } catch (err) {
+            // @ts-expect-error: только для красивого вывода.
+            console.error(err.message);
+        }
 
         return dep;
     }

@@ -2,6 +2,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Dependency } from "../domain/Dependency.js";
 
+const WINDOWS_DIVIDER = '\r\n'
+
 const melIgnoreDefaultPath = path.join(process.cwd(), '.melignore');
 const packageJsonPath = path.join(process.cwd(), 'package.json');
 const dependencyPath = path.join(process.cwd(), '.ads', 'dependencies.json');
@@ -17,11 +19,15 @@ export class FileSystemAPI {
     public static readMelIgnore(filePath = melIgnoreDefaultPath) {
         try {
             if (fs.existsSync(filePath)) {
-                return fs.readFileSync(filePath, 'utf-8').split('\n').map(line => line.trim()).filter(line => line);
+                const data = fs.readFileSync(filePath, 'utf-8');
+                const isWindowsLikeFile = data.includes(WINDOWS_DIVIDER);
+
+                return data.split(isWindowsLikeFile ? WINDOWS_DIVIDER : '\n').filter(Boolean);
             }
 
             return [];
         } catch (err) {
+            console.log(err);
             console.error(`Error reading .melignore`);
             return [];
         }
