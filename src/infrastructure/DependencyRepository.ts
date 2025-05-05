@@ -38,14 +38,18 @@ export class DependencyRepository {
             const depsArray = Array.from(this.dependencies.values());
             const newDeps: Record<string, string> = {};
 
-            depsArray.forEach(dep => newDeps[dep.getName] = dep.getVersion);
+            depsArray.forEach(dep => {
+                if (dep.name) {
+                    newDeps[dep.name] = dep.version;
+                    return;
+                }
+
+                newDeps[dep.getName] = dep.getVersion
+            });
 
             FileSystemAPI.saveDependencyADSFile(depsArray);
 
-            packageJSON.dependencies = {
-                ...packageJSON.dependencies,
-                ...newDeps,
-            }
+            packageJSON.dependencies = newDeps;
 
             FileSystemAPI.writePackageJson(packageJSON);
         } catch (err) {
