@@ -1,131 +1,138 @@
+import * as semver from 'semver';
 import * as kiwi from '@lume/kiwi';
 
-import type { Solver, Variable } from "@lume/kiwi";
+type DependencyMap = { [pkgName: string]: string };
 
-type DependencySection = 'dependencies' | 'devDependencies' | 'peerDependencies';
-type VersionSpec = { op: string, major: number, minor: number, patch: number };
-type PkgConstraints = { [pkg: string]: VersionSpec[] };
-
-function parseVersion(versionStr: string): VersionSpec[] {
-    const specs: VersionSpec[] = [];
-    const re = /(\^|~|>=|<=|>|<|=)?\s*([\d]+)(?:\.([\d]+))?(?:\.([\d]+))?/g;
-    let m: RegExpExecArray | null;
-    while ((m = re.exec(versionStr)) !== null) {
-        let op = m[1] || '==';
-        if (op === '=') op = '==';
-        let major = parseInt(m[2] || '0', 10);
-        let minor = parseInt(m[3] || '0', 10);
-        let patch = parseInt(m[4] || '0', 10);
-        specs.push({ op, major, minor, patch });
-    }
-    return specs;
+interface PeerConstraint {
+    constraint: string;
+    from: string;
 }
 
-function collectAllConstraints(packageJson: any): { [pkg: string]: VersionSpec[] } {
-    const sections: DependencySection[] = ['dependencies', 'devDependencies', 'peerDependencies'];
-    let result: { [pkg: string]: VersionSpec[] } = {};
-    for (let section of sections) {
-        const deps = packageJson[section] || {};
-        for (const [pkg, ver] of Object.entries(deps)) {
-            if (!result[pkg]) result[pkg] = [];
-            result[pkg].push(...parseVersion(ver as string));
-        }
-    }
-    return result;
+function semverToKiwiConstraints(peerRange: string, variable: kiwi.Variable) {
+    const constraints: kiwi.Constraint[] = [];
+    const range = new semver.Range(peerRange);
+    // Перебираем все поддиапазоны ("sets")
+    range.set.forEach(comparatorSet => {
+        comparatorSet.forEach(comparator => {
+            const version = semver.coerce(comparator.value);
+            if (!version) return;
+            const num = parseFloat(version.version);
+            switch (comparator.operator) {
+                case '':
+                case '=':
+                    constraints.push(new kiwi.Constraint(variable, kiwi.Operator.Eq, num));
+                    break;
+                case '>':
+                    constraints.push(new kiwi.Constraint(variable, kiwi.Operator.Ge, num));
+                    break;
+                case '>=':
+                    constraints.push(new kiwi.Constraint(variable, kiwi.Operator.Ge, num));
+                    break;
+                case '<':
+                    constraints.push(new kiwi.Constraint(variable, kiwi.Operator.Le, num));
+                    break;
+                case '<=':
+                    constraints.push(new kiwi.Constraint(variable, kiwi.Operator.Le, num));
+                    break;
+                default:
+                // ignore.
+            }
+        });
+    });
+    return constraints;
 }
 
-function addConstraints(
-    solver: Solver,
-    variables: { [pkg: string]: Variable },
-    pkg: string,
-    specs: VersionSpec[]
-) {
-    const v = variables[pkg];
-    for (const { op, major, minor, patch } of specs) {
-        const num = major * 10000 + minor * 100 + patch;
-        switch (op) {
-            case '==':
-                solver.addConstraint(new kiwi.Constraint(v, kiwi.Operator.Eq, num));
-                break;
-            case '>=':
-                solver.addConstraint(new kiwi.Constraint(v, kiwi.Operator.Ge, num));
-                break;
-            case '<=':
-                solver.addConstraint(new kiwi.Constraint(v, kiwi.Operator.Le, num));
-                break;
-            case '>':
-                solver.addConstraint(new kiwi.Constraint(v, kiwi.Operator.Ge, num));
-                break;
-            case '<':
-                solver.addConstraint(new kiwi.Constraint(v, kiwi.Operator.Le, num));
-                break;
-            case '^':
-                solver.addConstraint(new kiwi.Constraint(v, kiwi.Operator.Ge, num));
-                solver.addConstraint(new kiwi.Constraint(v, kiwi.Operator.Le, (major + 1) * 10000));
-                break;
-            case '~':
-                solver.addConstraint(new kiwi.Constraint(v, kiwi.Operator.Ge, num));
-                solver.addConstraint(new kiwi.Constraint(v, kiwi.Operator.Le, major * 10000 + (minor + 1) * 100));
-                break;
-            default:
-                throw new Error('Unknown operator: ' + op);
-        }
-    }
+async function fetchMeta(pkgName: string) {
+    console.log(`fetching extra info for ${pkgName}`)
+
+    const url = `https://registry.npmjs.org/${encodeURIComponent(pkgName)}`;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('Failed to fetch: ' + pkgName);
+    return resp.json();
+}
+
+interface PeerInfo {
+    sourcePkg: string;
+    version: string;
+    peerRange: string;
 }
 
 export class DependencyResolver {
-    private readonly constraints: PkgConstraints;
-    private resolved: { [pkg: string]: string } = {};
-    constructor(packageJson: any) {
-        this.constraints = collectAllConstraints(packageJson);
+    private async fetchMeta(pkg: string): Promise<any> {
+        const url = `https://registry.npmjs.org/${encodeURIComponent(pkg)}`;
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`Cannot fetch ${pkg}`);
+        return resp.json();
     }
 
-    resolve() {
-        const pkgs = Object.keys(this.constraints);
-        const variables: { [pkg: string]: Variable } = {};
-        pkgs.forEach(pkg => {
-            variables[pkg] = new kiwi.Variable(pkg);
-        });
+    async gatherAllConstraints(userDeps: DependencyMap): Promise<Record<string, string[]>> {
+        const constraints: Record<string, string[]> = {};
+        for (const [pkg, range] of Object.entries(userDeps)) {
+            if (!constraints[pkg]) constraints[pkg] = [];
+            constraints[pkg].push(range);
 
-        const solver = new kiwi.Solver();
+            const meta = await this.fetchMeta(pkg);
+            const matchedVersion = semver.maxSatisfying(Object.keys(meta.versions), range);
+            if (!matchedVersion) continue;
+            const info = meta.versions[matchedVersion] as { peerDependencies: Record<string, DependencyMap[]> };
 
-        let impossible: string[] = [];
-
-        // будет пытаться поочередно каждый пакет решать отдельно,
-        // чтобы в случае конфликта видеть всех конфликтующих
-        pkgs.forEach(pkg => {
-            try {
-                const singleSolver = new kiwi.Solver();
-                singleSolver.addEditVariable(variables[pkg], kiwi.Strength.weak);
-                singleSolver.suggestValue(variables[pkg], 10000);
-                addConstraints(singleSolver, variables, pkg, this.constraints[pkg]);
-                singleSolver.updateVariables();
-            } catch (e) {
-                impossible.push(pkg);
+            if (info.peerDependencies) {
+                for (const [peerName, peerRange] of Object.entries(info.peerDependencies)) {
+                    if (!constraints[peerName]) constraints[peerName] = [];
+                    constraints[peerName].push(peerRange as unknown as string);
+                }
             }
-        });
+        }
+        return constraints;
+    }
 
-        if (impossible.length) {
-            return `Несовместимые зависимости: ${impossible.join(', ')}.`;
+    async suggestBestVersions(userDeps: DependencyMap): Promise<{
+        recommended: DependencyMap,
+        conflicts: Record<string, { current?: string; suggestedRange: string; suggestion: string; }>
+    }> {
+        const allConstraints = await this.gatherAllConstraints(userDeps);
+        const recommended: DependencyMap = {};
+        const conflicts: Record<string, { current?: string; suggestedRange: string; suggestion: string; }> = {};
+
+        for (const pkg of Object.keys(allConstraints)) {
+            const cList = allConstraints[pkg];
+            const userRange = userDeps[pkg];
+
+            const meta = await this.fetchMeta(pkg);
+            const versions = Object.keys(meta.versions).filter(state => Boolean(semver.valid(state)));
+
+            const candidate = semver.maxSatisfying(versions, cList.join(" "));
+            if (candidate) {
+                recommended[pkg] = candidate;
+                continue;
+            }
+
+            const peersOnly = userRange
+                ? cList.filter(range => range !== userRange)
+                : cList;
+            if (!peersOnly.length) {
+                recommended[pkg] = userRange || "no version";
+                continue;
+            }
+
+            const peerCandidate = semver.maxSatisfying(versions, peersOnly.join(" "));
+            if (peerCandidate) {
+                recommended[pkg] = peerCandidate;
+                conflicts[pkg] = {
+                    current: userRange,
+                    suggestedRange: peersOnly.join(" "),
+                    suggestion: `Change "${pkg}" range to "^${peerCandidate}" to resolve peer conflicts.`
+                };
+            } else {
+                recommended[pkg] = "no compatible version";
+                conflicts[pkg] = {
+                    current: userRange,
+                    suggestedRange: peersOnly.join(" "),
+                    suggestion: `No version of "${pkg}" satisfies all peer constraints.`
+                };
+            }
         }
 
-        // Если никаких конфликтов, то решим все скопом и получим решения
-        pkgs.forEach(pkg => {
-            solver.addEditVariable(variables[pkg], kiwi.Strength.weak);
-            solver.suggestValue(variables[pkg], 10000);
-            addConstraints(solver, variables, pkg, this.constraints[pkg]);
-        });
-
-        solver.updateVariables();
-
-        const result: { [pkg: string]: string } = {};
-        pkgs.forEach(pkg => {
-            const num = Math.round(variables[pkg].value());
-            const major = Math.floor(num / 10000);
-            const minor = Math.floor((num % 10000) / 100);
-            const patch = num % 100;
-            result[pkg] = `${major}.${minor}.${patch}`;
-        });
-        return result;
+        return { recommended, conflicts };
     }
 }

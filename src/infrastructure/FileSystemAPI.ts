@@ -44,6 +44,22 @@ export class FileSystemAPI {
         }
     }
 
+    /**
+     * Метод для записи изменений в package.json.
+     * @param packageData - объект, который будет записан в package.json
+     * @param filePath
+     */
+    public static writePackageJson(packageData: any, filePath = packageJsonPath) {
+        try {
+            const json = JSON.stringify(packageData, null, 2) + '\n';
+            fs.writeFileSync(filePath, json, 'utf-8');
+            return true;
+        } catch (err) {
+            console.error('Error writing package.json.');
+            return false;
+        }
+    }
+
     public static readDependencyADSFile(filePath = dependencyPath) {
         try {
             if (fs.existsSync(filePath)) {

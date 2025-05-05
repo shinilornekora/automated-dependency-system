@@ -15,7 +15,7 @@ export function createADS(currentUsername: string) {
     const dependencyRepository = new DependencyRepository();
     const cveScanner = new CVEScanner();
     const npmService = new NpmService(currentUser);
-    const dependencyResolver = new DependencyResolver({});
+    const dependencyResolver = new DependencyResolver();
     const dependencyManager = new DependencyManager({
         dependencyRepository,
         dependencyResolver,

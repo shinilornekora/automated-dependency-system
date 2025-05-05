@@ -158,6 +158,19 @@ export class DependencyManager {
         })
     }
 
+    async resolveConflicts() {
+        const packageJSON = FileSystemAPI.readPackageJson();
+        const { recommended, conflicts } = await this.dependencyResolver.suggestBestVersions(packageJSON.dependencies);
+
+        if (Object.values(conflicts).length > 0) {
+            console.log('Cannot resolve conflict. Two libraries are incompatible.');
+            return;
+        }
+
+        packageJSON.dependencies = recommended;
+        FileSystemAPI.writePackageJson(packageJSON);
+    }
+
     getSecureVersion(currentVersion: string) {
         // Example: downgrade by reducing the minor version.
         const parts = currentVersion.split('.');

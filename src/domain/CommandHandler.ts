@@ -118,7 +118,7 @@ export class CommandHandler {
     }
 
     async resolveConflicts() {
-        return this.dependencyManager.checkAndResolveCVEs()
+        return this.dependencyManager.resolveConflicts();
     }
 
     async getMaintainer() {
