@@ -1,10 +1,12 @@
 # Automated Dependency System (ADS)
 
-This package implements an automated dependency system (ADS) built with Domain‑Driven Design. 
+This is the package for automatic dependency control, implemented in Domain-Driven-Design style. 
+- It scans your dependencies for CVEs each time it is being build
+- It removes unused dependencies of the project
+- It resolves conflicts automatically so you don't need to analyze peers anymore
+- And more. :)
 
-It scans for CVEs, enforces version locking, blocks unauthorized dependency changes, and more.
 
-# How to Use the ADS Package
 
 ### Installation:
 
@@ -12,22 +14,39 @@ It scans for CVEs, enforces version locking, blocks unauthorized dependency chan
 npm install -g automated-dependency-system
 ```
 
+---
+
 ### Usage
 
 Run `ads` in command line after the installation, follow the instructions.
 
+---
+
 ### Configuration:
-- To override ADS behavior for local package development, create a .melignore file in your project root (one project name per line).
-- Set the maintainer (for adding/removing dependencies) by setting an environment variable, for example:
+You can exclude some dependencies from the control of ADS for some reason.
+
+Create .melignore file at the root of your project, and write one dependency per line that needed to be excluded:
 
 ```bash
-# *nix
-export USER=your_username
-
-# Windows
-$env:USER=your_username
+vue
+lodash
+date-fns
 ```
-Instead of calling npm directly, use the ADS CLI to trigger ADS checks automatically.
+
+Note that dependency name should be exactly as in package.json file - each added dep will be invisible for ADS.
+
+- You can set the maintainer of the package to divide command permission execution.
+  - Instead of calling npm directly, use the ADS CLI to trigger ADS checks automatically.
+  - Set the maintainer (for adding/removing dependencies) by setting an environment variable, for example:
+    ```bash
+    # *nix
+    export USER=your_username
+    
+    # Windows
+    $env:USER=your_username
+    ```
+  - And there we go with UP / SP / FP functionality.
+---
 
 Acronyms
 - UP = unprotected - any developer can execute it
@@ -43,7 +62,7 @@ const { dependencyService } = createADS(process.env.ADS_MAINTAINER);
 
 (async () => {
     await dependencyService.runADSChecks();
-    // Proceed with your npm commands…
+    // Proceed with your ads commands…
 })();
 ```
 
