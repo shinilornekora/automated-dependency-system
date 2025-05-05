@@ -57,8 +57,8 @@ ads allowed-versions foo  # [UP] List the three most recent versions available f
 
 Acronyms
 - UP = unprotected - any developer can execute it
-- SP = semi-protected - 
-- FP = fully-protected
+- SP = semi-protected - function has common and protected scripts
+- FP = fully-protected - only maintainer can execute
 
 ### Integration:
 You can also import and use ADS programmatically in your own build scripts:

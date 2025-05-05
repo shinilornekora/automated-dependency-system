@@ -4,10 +4,12 @@ import { PROTECTED_COMMANDS } from "./types/protectedCommands.js";
 import { User } from "./User.js";
 import { Dependency } from "./Dependency.js";
 import { HandlerPayloadMap } from "./types/HandlerPayloadMap.js";
+import { NpmService } from "../infrastructure/NpmService.js";
 
 type CommandHandlerProps = {
     currentUser: User;
     dependencyManager: DependencyManager;
+    npmService: NpmService;
 }
 
 type CommandType = COMMON_COMMANDS | PROTECTED_COMMANDS;
@@ -26,11 +28,13 @@ type HandlerProps<T extends CommandType = CommandType> = {
  */
 export class CommandHandler {
     dependencyManager: DependencyManager;
+    npmService: NpmService;
     currentUser: User;
 
-    constructor({ currentUser, dependencyManager }: CommandHandlerProps) {
+    constructor({ currentUser, dependencyManager, npmService }: CommandHandlerProps) {
         this.currentUser = currentUser;
         this.dependencyManager = dependencyManager;
+        this.npmService = npmService;
     }
 
     async handle<T extends CommandType>({ type, payload }: HandlerProps<T>) {
@@ -71,13 +75,27 @@ export class CommandHandler {
         await this.dependencyManager.syncWithPackageJson();
     }
 
+    // Общий процесс проверки ADS.
+    // 1. Убираем все неиспользующиеся зависимости
+    // 2. Сканируем на уязвимости, даунгрейдим если крит
+    // 3. Убираем все конфликты которые могли возникнуть
+    // 4. Синхронизируем ADS файл с package.json
+    // 5. Лочим все зависимости ADS
     async commonADSCheck() {
-        await this.dependencyManager.checkAndResolveCVEs();
         this.dependencyManager.removeUnusedDependencies();
+        await this.dependencyManager.checkAndResolveCVEs();
+        await this.dependencyManager.resolveConflicts();
+        await this.dependencyManager.syncWithPackageJson();
         this.dependencyManager.lockAllCurrentVersions();
     }
 
+    async startApplication() {
+        await this.commonADSCheck();
+        await this.npmService.startApp();
+    }
+
     async deleteDependency({ depName }: { depName: string }) {
+        await this.commonADSCheck();
         this.dependencyManager.removeDependency(depName);
     }
 
@@ -91,6 +109,7 @@ export class CommandHandler {
     }
 
     async installDeps(payload: string[]) {
+        await this.commonADSCheck();
         this.dependencyManager.installDeps(payload);
     }
 
@@ -106,10 +125,12 @@ export class CommandHandler {
     }
 
     async triggerADSBuild() {
+        await this.commonADSCheck();
         this.dependencyManager.triggerADSBuild();
     }
 
     async addDependency(payload: Dependency) {
+        await this.commonADSCheck();
         this.dependencyManager.addDependency(payload);
     }
 

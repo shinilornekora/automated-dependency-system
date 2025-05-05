@@ -31,6 +31,13 @@ export class DependencyService {
         })
     }
 
+    async runStartApplication() {
+        return await this.commandHandler.handle({
+            type: COMMON_COMMANDS.START_APPLICATION,
+            payload: {}
+        })
+    }
+
     async runADSChecks() {
         return await this.commandHandler.handle({
             type: COMMON_COMMANDS.INIT_ADS,

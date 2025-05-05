@@ -9,4 +9,5 @@ export enum COMMON_COMMANDS {
     INIT_ADS = 'initADS',
     COMMON_ADS_CHECK = 'commonADSCheck',
     TRIGGER_ADS_BUILD = 'triggerADSBuild',
+    START_APPLICATION = 'startApplication',
 }

@@ -14,7 +14,6 @@ type ProjectProps = {
  * Отсюда можно прочитать в любой момент любой конфигурационный файл.
  */
 export class Project {
-    private readonly dependencies: Dependency[];
     private melignoreFile: Record<string, string>;
     private packageJSON: Record<string, string>;
     private ADSFile: Record<string, string>;
@@ -23,19 +22,13 @@ export class Project {
     constructor({
         melignoreFile,
         packageJSON,
-        dependencies,
         ADSFile,
         user
     }: ProjectProps) {
-        this.dependencies = dependencies;
         this.melignoreFile = melignoreFile;
         this.ADSFile = ADSFile;
         this.user = user;
         this.packageJSON = packageJSON;
-    }
-
-    public get getDependencies() {
-        return this.dependencies;
     }
 
     public get maintainer() {

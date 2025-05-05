@@ -9,6 +9,7 @@ import { allowedVersions } from "./allowedVersionsCommand.js";
 import { ConsoleCommand } from "./types.js";
 import { DependencyService } from "../../application/DependencyService.js";
 import { initCommand } from "./initCommand.js";
+import { startCommand } from "./startCommand.js";
 
 export const commands = (service: DependencyService): ConsoleCommand[] => {
     return [
@@ -21,5 +22,6 @@ export const commands = (service: DependencyService): ConsoleCommand[] => {
         removeCommand,
         resolveCommand,
         allowedVersions,
+        startCommand
     ].map(command => command(service));
 }

@@ -4,7 +4,7 @@ import { DependencyService } from "../../application/DependencyService.js";
 
 export const addCommand = (service: DependencyService): ConsoleCommand => ({
     command: 'add <name> <version>',
-    description: "Add a new dependency via ADS (only for maintainers)",
+    description: "[FP]: Add new dependency to the project",
     action: async (...args) => {
         const [name, version] = args as unknown as Readonly<[string, string]>;
 

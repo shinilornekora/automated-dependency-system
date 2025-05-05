@@ -3,7 +3,7 @@ import { DependencyService } from "../../application/DependencyService.js";
 
 export const removeCommand = (service: DependencyService): ConsoleCommand => ({
     command: 'remove <name>',
-    description: "Remove a dependency via ADS (only for maintainers)",
+    description: "[FP]: Remove dependency from project",
     action: async (name) => {
         try {
             await service.removeDependency(name);

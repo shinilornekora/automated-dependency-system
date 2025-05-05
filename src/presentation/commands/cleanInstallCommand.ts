@@ -3,7 +3,7 @@ import { DependencyService } from "../../application/DependencyService.js";
 
 export const cleanInstallCommand = (service: DependencyService): ConsoleCommand => ({
     command: 'clean-install',
-    description: "Run npm clean-install (ci) with ADS checks",
+    description: "[UP]: Run clean install with ADS checks",
     action: async () => {
         await service.cleanInstallDeps();
     }

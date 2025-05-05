@@ -64,4 +64,10 @@ export class NpmService {
             });
         });
     }
+
+    // Только сюда можно было отнести эту команду.
+    // Не нужен же еще отдельно ProjectStateManager.
+    async startApp() {
+        this.run('start');
+    }
 }

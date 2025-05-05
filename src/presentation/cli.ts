@@ -18,8 +18,10 @@ const { dependencyService } = createADS(currentUsername);
 const rules = commands(dependencyService);
 
 program
+    .name('ads')
     .version(programPackageJSON.version)
-    .description("Automated Dependency System (ADS) CLI");
+    .description("Automated Dependency System (ADS) CLI")
+    .usage("[commands] arg_1 arg_2 ...");
 
 for (const { command, description, action, option } of rules) {
     if (option) {
