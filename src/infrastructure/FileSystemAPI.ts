@@ -39,7 +39,7 @@ export class FileSystemAPI {
             }
             return null;
         } catch (err) {
-            console.error(`Error reading package.json.`);
+            console.error(`ADS has not found any package.json file.`);
             return null;
         }
     }

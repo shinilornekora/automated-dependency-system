@@ -12,6 +12,10 @@ It scans for CVEs, enforces version locking, blocks unauthorized dependency chan
 npm install -g automated-dependency-system
 ```
 
+### Usage
+
+Run `ads` in command line after the installation, follow the instructions.
+
 ### Configuration:
 - To override ADS behavior for local package development, create a .melignore file in your project root (one project name per line).
 - Set the maintainer (for adding/removing dependencies) by setting an environment variable, for example:
@@ -23,37 +27,7 @@ export USER=your_username
 # Windows
 $env:USER=your_username
 ```
-Instead of calling npm directly, use the ADS CLI to trigger ADS checks automatically:
-
-### Common ADS check:
-- CVE scanning
-- Cleaning unused dependencies
-- Locking all current dependencies in ADS file
-
-### All ADS CLI commands
-
-```bash
-ads init                  # [UP] Initialize ADS with local package.json
-
-ads resolve               # [UP] Solve dependencies conflict of current package
-
-ads check                 # [UP] Run all ADS checks (CVE scanning, cleaning, locking)
-
-ads install               # [SP] Run npm install with ADS check 
-                          # [CONDITION] if not-maintainer, then block adding operations
-
-ads build                 # [UP] Run npm build with ADS check
-
-ads clean-install         # [UP] Run npm ci
-
-ads add foo 1.2.3         # [FP] Add a new dependency to ads file
-                          # [CONDITION]  if not-maintainer, then block
-                          
-ads remove foo            # [FP] Remove a dependency from ads file
-                          # [CONDITION]  if not-maintainer, then block
-                          
-ads allowed-versions foo  # [UP] List the three most recent versions available for "foo"
-```
+Instead of calling npm directly, use the ADS CLI to trigger ADS checks automatically.
 
 Acronyms
 - UP = unprotected - any developer can execute it
@@ -65,7 +39,7 @@ You can also import and use ADS programmatically in your own build scripts:
 
 ```js
 const createADS = require('automated-dependency-system');
-const { dependencyService } = createADS(process.env.ADS_MAINTAINER || 'defaultMaintainer');
+const { dependencyService } = createADS(process.env.ADS_MAINTAINER);
 
 (async () => {
     await dependencyService.runADSChecks();

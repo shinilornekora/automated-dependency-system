@@ -40,7 +40,7 @@ export class DependencyService {
 
     async runADSChecks() {
         return await this.commandHandler.handle({
-            type: COMMON_COMMANDS.INIT_ADS,
+            type: COMMON_COMMANDS.COMMON_ADS_CHECK,
             payload: {}
         })
     }

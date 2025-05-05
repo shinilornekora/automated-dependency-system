@@ -6,6 +6,16 @@ import { Dependency } from "./Dependency.js";
 import { HandlerPayloadMap } from "./types/HandlerPayloadMap.js";
 import { NpmService } from "../infrastructure/NpmService.js";
 
+const colors = {
+    reset: "\x1b[0m",
+    cyan: "\x1b[36m",
+    green: "\x1b[32m",
+    yellow: "\x1b[33m",
+    magenta: "\x1b[35m",
+    blue: "\x1b[34m",
+    bold: "\x1b[1m"
+};
+
 type CommandHandlerProps = {
     currentUser: User;
     dependencyManager: DependencyManager;
@@ -73,6 +83,9 @@ export class CommandHandler {
 
     async initADS() {
         await this.dependencyManager.syncWithPackageJson();
+        await this.dependencyManager.checkAndResolveCVEs();
+        await this.dependencyManager.resolveConflicts();
+        this.dependencyManager.lockAllCurrentVersions();
     }
 
     // Общий процесс проверки ADS.
@@ -82,11 +95,25 @@ export class CommandHandler {
     // 4. Синхронизируем ADS файл с package.json
     // 5. Лочим все зависимости ADS
     async commonADSCheck() {
+        console.log(`${colors.cyan}[STEP 1]:${colors.reset} remove unused dependencies started\n`);
         this.dependencyManager.removeUnusedDependencies();
+        console.log(`\n${colors.green}[STEP 1]:${colors.reset} remove unused dependencies completed`);
+
+        console.log(`${colors.cyan}[STEP 2]:${colors.reset} scanning the deps process started\n`);
         await this.dependencyManager.checkAndResolveCVEs();
+        console.log(`\n${colors.green}[STEP 2]:${colors.reset} scanning the deps process completed`);
+
+        console.log(`${colors.cyan}[STEP 3]:${colors.reset} conflicts resolve started\n`);
         await this.dependencyManager.resolveConflicts();
+        console.log(`\n${colors.green}[STEP 3]:${colors.reset} conflicts resolve completed`);
+
+        console.log(`${colors.cyan}[STEP 4]:${colors.reset} sync with package.json started\n`);
         await this.dependencyManager.syncWithPackageJson();
+        console.log(`\n${colors.green}[STEP 4]:${colors.reset} sync with package.json completed`);
+
+        console.log(`${colors.bold}${colors.cyan}[STEP 5]:${colors.reset} all current deps are being locked now\n`);
         this.dependencyManager.lockAllCurrentVersions();
+        console.log(`\n${colors.bold}${colors.green}[STEP 5]:${colors.reset} all current deps are locked`);
     }
 
     async startApplication() {

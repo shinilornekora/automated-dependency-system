@@ -31,11 +31,36 @@ export class CVEScanner {
     }
 
     /**
-     * Общий скан пакета, исходная точка.
+     * Проверить, является ли пакет deprecated.
+     * @param packageName
+     * @param version
+     */
+    async checkDeprecated(packageName: string, version: string) {
+        try {
+            const res = await fetch(`https://registry.npmjs.org/${packageName}`);
+            const meta = await res.json();
+            const targetVersion = meta.versions?.[version] as { deprecated: boolean };
+            if (targetVersion && targetVersion.deprecated) {
+                console.warn(
+                    `\x1b[33m[DEPRECATED]\x1b[0m Пакет "${packageName}@${version}" устарел: ${targetVersion.deprecated}`
+                );
+                return true;
+            }
+        } catch (e) {
+            // fail silently (бывает rate limit)
+        }
+        return false;
+    }
+
+    /**
+     * Общий скан зависимости.
      * @param dependency
      */
     async scan(dependency: Dependency) {
         try {
+            // Проверить устарел ли пакет
+            await this.checkDeprecated(dependency.getName, dependency.getVersion);
+
             const auditResults = await this.getAuditResults();
             const advisories = auditResults.advisories || {};
 
@@ -44,8 +69,11 @@ export class CVEScanner {
 
                 if (advisory.module_name === dependency.getName) {
                     if (['high', 'critical'].includes(advisory.severity)) {
-                        // If a patched version is defined but the current version does not satisfy it, return a "fixed" signal.
-                        if (advisory.patched_versions && !semver.satisfies(dependency.getVersion, advisory.patched_versions)) {
+                        // Если есть patched_versions и текущая версия не удовлетворяет — рекомендуем фикс.
+                        if (
+                            advisory.patched_versions &&
+                            !semver.satisfies(dependency.getVersion, advisory.patched_versions)
+                        ) {
                             return {
                                 severity: 'fixed',
                                 fixedVersion: this.getLatestVersion(dependency.getName)
@@ -65,7 +93,7 @@ export class CVEScanner {
     }
 
     /**
-     * Берет последнюю версию пакета
+     * Берёт последнюю версию пакета.
      * @param packageName
      */
     getLatestVersion(packageName: string) {

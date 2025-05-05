@@ -62,6 +62,7 @@ export class DependencyManager {
                         isLocal: false
 
                     })
+
                     this.addDependency(dep);
                 })
         } catch (err) {
@@ -108,7 +109,7 @@ export class DependencyManager {
     }
 
     async checkAndResolveCVEs() {
-        const dependencies = this.dependencyRepository.getAll();
+        const dependencies = this.dependencyRepository.getAll().map(dep => new Dependency(dep));
         for (const dep of dependencies) {
             if (dep.getIsLocal) {
                 console.log(`Local dependency pointer detected for ${dep.getName}. Removing immediately.`);
@@ -150,12 +151,16 @@ export class DependencyManager {
 
     lockAllCurrentVersions() {
         console.log("Locking all current dependency versions.");
-        const deps = this.dependencyRepository.getAll();
+        const deps = this.dependencyRepository.getAll().map(dep => new Dependency(dep));
         deps.forEach(dep => {
-            console.log(dep.getName);
+            if (dep.readOnly) {
+                console.log(`Dependency ${dep.getName} is already read-only.`);
+                return;
+            }
 
             dep.markReadOnly();
-        })
+            console.log(`Dependency ${dep.getName} is locked.`);
+        });
     }
 
     async resolveConflicts() {
@@ -193,13 +198,16 @@ export class DependencyManager {
     removeUnusedDependencies() {
         const now = Date.now();
         const threshold = 5 * 60 * 60 * 1000;
-        const dependencies = this.dependencyRepository.getAll();
+        const dependencies = this.dependencyRepository.getAll().map(dep => new Dependency(dep));
 
         for (const dep of dependencies) {
             if ((now - dep.getLastUsed) > threshold) {
                 console.log(`Dependency ${dep.getName} has not been used for over 5 hours. Removing...`);
                 this.dependencyRepository.remove(dep.getName);
+                continue;
             }
+
+            console.log(`Dependency ${dep.getName} is actual.`)
         }
     }
 

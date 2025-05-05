@@ -29,13 +29,25 @@ export class DependencyRepository {
     }
 
     /**
-     * Сохранение новый зависимостей в файл.
+     * Сохраняем текущее состояние в файл зависимостей.
+     * Важно чтобы разработчик был в корне проекта.
      */
     private save() {
         try {
+            const packageJSON = FileSystemAPI.readPackageJson();
             const depsArray = Array.from(this.dependencies.values());
+            const newDeps: Record<string, string> = {};
+
+            depsArray.forEach(dep => newDeps[dep.getName] = dep.getVersion);
 
             FileSystemAPI.saveDependencyADSFile(depsArray);
+
+            packageJSON.dependencies = {
+                ...packageJSON.dependencies,
+                ...newDeps,
+            }
+
+            FileSystemAPI.writePackageJson(packageJSON);
         } catch (err) {
             console.log(err)
             console.error(`Error saving dependencies`);

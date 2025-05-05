@@ -9,13 +9,13 @@ type Props = {
 }
 
 export class Dependency {
-    private readonly name: string;
-    private version: string;
+    public readonly name: string;
+    public version: string;
     readonly maintainer: string | null;
-    private readOnly: boolean;
-    private readonly resolvedByGPT: boolean | undefined;
-    private lastUsed: number;
-    private readonly isLocal: boolean | undefined;
+    public readOnly: boolean;
+    public readonly resolvedByGPT: boolean | undefined;
+    public lastUsed: number;
+    public readonly isLocal: boolean | undefined;
 
     constructor({ name, version, maintainer, resolvedByGPT, readOnly, lastUsed, isLocal }: Props) {
         this.name = name;
