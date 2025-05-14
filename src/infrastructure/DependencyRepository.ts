@@ -34,7 +34,7 @@ export class DependencyRepository {
      */
     private save() {
         try {
-            const melIngnoreFile = FileSystemAPI.readMelIgnore();
+            const melIgnoreFile = FileSystemAPI.readMelIgnore();
             const packageJSON = FileSystemAPI.readPackageJson();
             const depsArray = Array.from(this.dependencies.values());
             const newDeps: Record<string, string> = {};
@@ -52,7 +52,7 @@ export class DependencyRepository {
 
             const newDepsNames = Object.keys(newDeps);
 
-            for (const ignoredDepName of melIngnoreFile) {
+            for (const ignoredDepName of melIgnoreFile) {
                 const droppedIgnoredDep = !newDepsNames.includes(ignoredDepName);
                 const ignoredDepExists = packageJSON.dependencies[ignoredDepName]
 

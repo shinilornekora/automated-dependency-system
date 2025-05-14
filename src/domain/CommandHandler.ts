@@ -121,6 +121,11 @@ export class CommandHandler {
         await this.npmService.startApp();
     }
 
+    async cleanInstallDependencies() {
+        await this.commonADSCheck();
+        this.dependencyManager.cleanInstallDependencies();
+    }
+
     async deleteDependency({ depName }: { depName: string }) {
         await this.commonADSCheck();
         this.dependencyManager.removeDependency(depName);
