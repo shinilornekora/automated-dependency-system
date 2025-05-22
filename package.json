@@ -23,7 +23,10 @@
     "type": "module",
     "dependencies": {
         "@lume/kiwi": "^0.4.4",
+        "boxen": "^8.0.1",
+        "chalk": "^5.4.1",
         "commander": "^10.0.0",
+        "gradient-string": "^3.0.0",
         "kiwi": "^0.2.2",
         "semver": "^7.3.5",
         "typescript": "^5.8.3"
