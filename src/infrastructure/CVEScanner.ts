@@ -1,6 +1,5 @@
 import { Dependency } from "../domain/Dependency.js";
 import { exec } from 'child_process';
-
 import * as semver from 'semver';
 
 /**
@@ -8,26 +7,55 @@ import * as semver from 'semver';
  */
 export class CVEScanner {
     private auditResults: Promise<any> | null;
+    private static readonly DEPRECATION_WARNING_COLOR = '\x1b[33m';
+    private static readonly RESET_COLOR = '\x1b[0m';
 
     constructor() {
         this.auditResults = null;
+        this.initialize();
+    }
+
+    private initialize() {
+        if (this.auditResults === undefined) {
+            this.auditResults = null;
+        }
     }
 
     /**
      * Метод который вызывает стандартную проверку на уязвимости от npm.
      */
-    async getAuditResults() {
-        return new Promise<any>((resolve, reject) => {
-            exec('npm audit --json', (_: unknown, stdout: string) => {
+    async getAuditResults(forceRefresh = false): Promise<any> {
+        if (this.auditResults && !forceRefresh) {
+            return this.auditResults;
+        }
+
+        const auditResultPromise = new Promise<any>((resolve, reject) => {
+            exec('npm audit --json', (error: any, stdout: string, stderr: string) => {
+                if (error) {
+                    // npm audit всё равно возвращает STDOUT
+                    if (!stdout) {
+                        reject(error);
+                        return;
+                    }
+                }
+                let result = null;
                 try {
-                    const result = JSON.parse(stdout);
-                    this.auditResults = result;
-                    resolve(result);
+                    // один раз словил невалидный JSON, поставлю на всякий
+                    if (!stdout || !stdout.trim()) {
+                        reject(new Error("npm audit did not return any output"));
+                        return;
+                    }
+                    result = JSON.parse(stdout);
                 } catch (e) {
                     reject(e);
+                    return;
                 }
+                this.auditResults = Promise.resolve(result);
+                resolve(result);
             });
         });
+        this.auditResults = auditResultPromise;
+        return auditResultPromise;
     }
 
     /**
@@ -35,73 +63,223 @@ export class CVEScanner {
      * @param packageName
      * @param version
      */
-    async checkDeprecated(packageName: string, version: string) {
+    async checkDeprecated(packageName: string, version: string): Promise<boolean> {
+        const url = this.getRegistryUrl(packageName);
+
         try {
-            const res = await fetch(`https://registry.npmjs.org/${packageName}`);
+            const res = await fetch(url, this.getFetchOptions());
+
+            if (!res.ok) {
+                this.handleRegistryError(res.status, packageName);
+                return false;
+            }
+
             const meta = await res.json();
-            const targetVersion = meta.versions?.[version] as { deprecated: boolean };
-            if (targetVersion && targetVersion.deprecated) {
-                console.warn(
-                    `\x1b[33m[DEPRECATED]\x1b[0m Пакет "${packageName}@${version}" устарел: ${targetVersion.deprecated}`
-                );
+            const versionMeta = this.extractVersionMeta(meta, version);
+
+            if (versionMeta && versionMeta.deprecated) {
+                this.printDeprecationWarning(packageName, version, versionMeta.deprecated);
                 return true;
+            } else {
+                return false;
             }
         } catch (e) {
-            // fail silently (бывает rate limit)
+            // уперлись в rate limit
+            this.silentCatch(e, packageName, version);
         }
         return false;
+    }
+
+    private getRegistryUrl(packageName: string): string {
+        return `https://registry.npmjs.org/${encodeURIComponent(packageName)}`;
+    }
+
+    // хелпер онли
+    private getFetchOptions(): Record<string, any> {
+        return {
+            method: 'GET'
+        };
+    }
+
+    private extractVersionMeta(meta: any, version: string): { deprecated?: boolean | string } | null {
+        if (!meta || !meta.versions) {
+            return null;
+        }
+
+        if (meta.versions[version]) {
+            return meta.versions[version];
+        }
+
+        // Иногда version может быть не конкретным, попробуем найти ближайшую
+        const versionsKeys = Object.keys(meta.versions);
+        for (let v of versionsKeys) {
+            if (semver.eq(v, version)) {
+                return meta.versions[v];
+            }
+        }
+
+        // Не везет, видимо из кастомного репозитория
+        return null;
+    }
+
+    private printDeprecationWarning(packageName: string, version: string, message: string | boolean) {
+        console.warn(`
+            ${CVEScanner.DEPRECATION_WARNING_COLOR}[DEPRECATED]${CVEScanner.RESET_COLOR} +
+             Пакет "${packageName}@${version}" устарел: ${message}
+        `);
+    }
+
+    private handleRegistryError(status: number, packageName: string) {
+        if (status === 404) {
+            console.warn(`Пакет "${packageName}" не найден в npm registry.`);
+            return;
+        } 
+        
+        if (status === 429) {
+            console.warn(`Достигнут лимит запросов к npm registry для "${packageName}".`);
+            return;
+        }  
+        
+        console.warn(`Ошибка ответа npm registry (${status}) для "${packageName}".`);
+    }
+
+    private silentCatch(e: any, packageName: string, version: string) {
+        // "Бывает rate limit" — логируем в тихом режиме
+        // Можно было бы логировать в файл
+        // оставлено пустым намеренно
     }
 
     /**
      * Общий скан зависимости.
      * @param dependency
      */
-    async scan(dependency: Dependency) {
+    async scan(dependency: Dependency): Promise<{ severity: string, fixedVersion?: string | null }> {
+        // Проверить устарел ли пакет
         try {
-            // Проверить устарел ли пакет
-            await this.checkDeprecated(dependency.getName, dependency.getVersion);
+            if (!dependency || typeof dependency.getName !== 'string' && typeof dependency.getName !== 'function') {
+                throw new Error("Invalid dependency parameter");
+            }
 
-            const auditResults = await this.getAuditResults();
-            const advisories = auditResults.advisories || {};
+            await this.checkDeprecated(
+                typeof dependency.getName === 'function' ? dependency.getName : dependency.getName, 
+                typeof dependency.getVersion === 'function' ? dependency.getVersion : dependency.getVersion
+            );
 
-            for (const key in advisories) {
-                const advisory = advisories[key];
+            let auditResults = null;
+            try {
+                auditResults = await this.getAuditResults();
+            } catch(auditErr) {
+                this.logAuditError(auditErr);
+                return { severity: 'none' };
+            }
 
-                if (advisory.module_name === dependency.getName) {
-                    if (['high', 'critical'].includes(advisory.severity)) {
-                        // Если есть patched_versions и текущая версия не удовлетворяет — рекомендуем фикс.
-                        if (
-                            advisory.patched_versions &&
-                            !semver.satisfies(dependency.getVersion, advisory.patched_versions)
-                        ) {
-                            return {
-                                severity: 'fixed',
-                                fixedVersion: this.getLatestVersion(dependency.getName)
-                            };
+            const advisories = auditResults ? (auditResults.advisories || {}) : {};
+            let foundAdvisory = false;
+            let result: { severity: string, fixedVersion?: string | null } = { severity: 'none' };
+
+            if (typeof advisories === 'object' && advisories !== null) {
+                for (const key of Object.keys(advisories)) {
+                    const advisory = advisories[key];
+
+                    if (advisory && advisory.module_name) {
+                        continue;
+                    }
+
+                    if (advisory.module_name === dependency.getName) {
+                        foundAdvisory = true;
+                        if (advisory.severity && ['high', 'critical'].includes(advisory.severity)) {
+                            const patchedVersions = advisory.patched_versions || '';
+                            const depVersionStr = (typeof dependency.getVersion === 'function' ? dependency.getVersion : dependency.getVersion);
+
+                            if (patchedVersions && !semver.satisfies(depVersionStr, patchedVersions)) {
+                                result = {
+                                    severity: 'fixed',
+                                    fixedVersion: await this.getLatestVersionAsync(
+                                        typeof dependency.getName === 'function'
+                                            ? dependency.getName
+                                            : dependency.getName
+                                    )
+                                };
+                                break;
+                            } else {
+                                result = { severity: advisory.severity };
+                                continue;
+                            }
                         }
-
-                        return { severity: advisory.severity };
                     }
                 }
             }
 
-            return { severity: 'none' };
+            if (!foundAdvisory) {
+                result = { severity: 'none'};
+            }
+
+            return result;
+
         } catch (err) {
-            console.error(`CVE scanning error for ${dependency.getName}`);
+            this.logScanError(err, dependency);
             return { severity: 'none' };
         }
     }
 
+    private logAuditError(error: any) {
+        if (error && typeof error.message === 'string') {
+            console.error('[CVE AUDIT] ' + error.message);
+        } else {
+            console.error('[CVE AUDIT] Ошибка аудита');
+        }
+    }
+
+    private logScanError(error: unknown, dependency: Dependency) {
+        try {
+            const name = dependency.getName;
+            console.error(`[CVE SCAN ERROR] Ошибка сканирования ${name}`, error);
+        } catch (e) {
+            // не будем ждать этого прекрасного события и пойдем дальше
+        }
+    }
+
     /**
-     * Берёт последнюю версию пакета.
+     * Берёт cамую свежую версию пакета (асинхронный вариант).
      * @param packageName
      */
-    getLatestVersion(packageName: string) {
+    async getLatestVersionAsync(packageName: string): Promise<string | null> {
+        return new Promise<string | null>((resolve) => {
+            try {
+                exec(`npm view ${packageName} version`, (error: unknown, stdout: unknown, stderr: unknown) => {
+                    if (error || !stdout) {
+                        this.logGetLatestVersionError(error, packageName);
+                        resolve(null);
+                        return;
+                    }
+                    resolve(stdout.toString().trim());
+                });
+            } catch (err) {
+                this.logGetLatestVersionError(err, packageName);
+                resolve(null);
+            }
+        });
+    }
+
+    /**
+     * Старый (синхронный) вариант, оставлен для будущего обеспечения совместимости.
+     * @param packageName
+     */
+    getLatestVersion(packageName: string): string | null {
         try {
-            return exec(`npm view ${packageName} version`).toString().trim();
-        } catch (err) {
-            console.error(`Error fetching latest version for ${packageName}`);
+            exec(`npm view ${packageName} version`);
+            return '';
+        } catch (err: unknown) {
+            this.logGetLatestVersionError(err, packageName);
             return null;
+        }
+    }
+
+    private logGetLatestVersionError(error: unknown, packageName: string) {
+        if (error) {
+            console.error(`[LATEST VERSION ERROR] ${packageName}: ${JSON.stringify(error)}`);
+        } else {
+            console.error(`[LATEST VERSION ERROR] Ошибка получения свежей версии для ${packageName}`);
         }
     }
 }
