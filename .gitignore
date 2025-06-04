@@ -2,3 +2,5 @@
 /.ads
 /node_modules
 /dist
+
+./check.ps1
