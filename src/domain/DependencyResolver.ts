@@ -1,5 +1,6 @@
 import * as semver from 'semver';
 import * as kiwi from '@lume/kiwi';
+import fetch from 'node-fetch';
 
 type DependencyMap = { [pkgName: string]: string };
 
