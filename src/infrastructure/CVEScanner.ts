@@ -6,7 +6,7 @@ import * as semver from 'semver';
  * Класс для сканирования текущих уязвимостей в зависимостях.
  */
 export class CVEScanner {
-    private auditResults: Promise<any> | null;
+    public auditResults: Promise<any> | null;
     private static readonly DEPRECATION_WARNING_COLOR = '\x1b[33m';
     private static readonly RESET_COLOR = '\x1b[0m';
 
@@ -101,7 +101,7 @@ export class CVEScanner {
         };
     }
 
-    private extractVersionMeta(meta: any, version: string): { deprecated?: boolean | string } | null {
+    public extractVersionMeta(meta: any, version: string): { deprecated?: boolean | string } | null {
         if (!meta || !meta.versions) {
             return null;
         }
@@ -181,33 +181,34 @@ export class CVEScanner {
                 for (const key of Object.keys(advisories)) {
                     const advisory = advisories[key];
 
-                    if (advisory && advisory.module_name) {
+                    if (!advisory || advisory.module_name !== dependency.getName) continue;
+
+                    foundAdvisory = true;
+
+                    if (advisory.severity && ['high', 'critical'].includes(advisory.severity)) {
+                        const patchedVersions = advisory.patched_versions || '';
+                        const depVersionStr =
+                            typeof dependency.getVersion === 'function'
+                                ? dependency.getVersion
+                                : dependency.getVersion;
+
+                        if (patchedVersions && !semver.satisfies(depVersionStr, patchedVersions)) {
+                            result = {
+                                severity: 'fixed',
+                                fixedVersion: await this.getLatestVersionAsync(
+                                    typeof dependency.getName === 'function'
+                                        ? dependency.getName
+                                        : dependency.getName
+                                )
+                            };
+                            break;
+                        }
+                        result = { severity: advisory.severity, fixedVersion: null };
                         continue;
                     }
-
-                    if (advisory.module_name === dependency.getName) {
-                        foundAdvisory = true;
-                        if (advisory.severity && ['high', 'critical'].includes(advisory.severity)) {
-                            const patchedVersions = advisory.patched_versions || '';
-                            const depVersionStr = (typeof dependency.getVersion === 'function' ? dependency.getVersion : dependency.getVersion);
-
-                            if (patchedVersions && !semver.satisfies(depVersionStr, patchedVersions)) {
-                                result = {
-                                    severity: 'fixed',
-                                    fixedVersion: await this.getLatestVersionAsync(
-                                        typeof dependency.getName === 'function'
-                                            ? dependency.getName
-                                            : dependency.getName
-                                    )
-                                };
-                                break;
-                            } else {
-                                result = { severity: advisory.severity };
-                                continue;
-                            }
-                        }
-                    }
                 }
+
+
             }
 
             if (!foundAdvisory) {
@@ -222,7 +223,7 @@ export class CVEScanner {
         }
     }
 
-    private logAuditError(error: any) {
+    public logAuditError(error: any) {
         if (error && typeof error.message === 'string') {
             console.error('[CVE AUDIT] ' + error.message);
         } else {
@@ -230,7 +231,7 @@ export class CVEScanner {
         }
     }
 
-    private logScanError(error: unknown, dependency: Dependency) {
+    public logScanError(error: unknown, dependency: Dependency) {
         try {
             const name = dependency.getName;
             console.error(`[CVE SCAN ERROR] Ошибка сканирования ${name}`, error);
@@ -275,7 +276,7 @@ export class CVEScanner {
         }
     }
 
-    private logGetLatestVersionError(error: unknown, packageName: string) {
+    public logGetLatestVersionError(error: unknown, packageName: string) {
         if (error) {
             console.error(`[LATEST VERSION ERROR] ${packageName}: ${JSON.stringify(error)}`);
         } else {

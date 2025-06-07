@@ -10,6 +10,7 @@ type ResultsProps = {
 /**
  * Класс для генерации отчета после автоматического процесса ADS.
  * Печатаем куда-то в консоль, оставим вывод на систему.
+ * TODO: применить в отчетах
  */
 export class Results {
     private readonly projectName: string;

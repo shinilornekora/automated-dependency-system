@@ -122,7 +122,7 @@ export class FileSystemAPI {
         }
     }
 
-    private static _writeFile(filePath: string, data: string) {
+    public static _writeFile(filePath: string, data: string) {
         try {
             fs.writeFileSync(filePath, data, 'utf-8');
         } catch (err) {
@@ -170,17 +170,17 @@ export class FileSystemAPI {
         }
     }
 
-    private static _getDirPath(filePath: string): string {
+    public static _getDirPath(filePath: string): string {
         return path.dirname(filePath);
     }
 
-    private static _ensureDirExists(dirPath: string) {
+    public static _ensureDirExists(dirPath: string) {
         if (!fs.existsSync(dirPath)) {
             this._makeDir(dirPath);
         }
     }
 
-    private static _makeDir(dirPath: string) {
+    public static _makeDir(dirPath: string) {
         try {
             fs.mkdirSync(dirPath, { recursive: true });
         } catch (err) {
@@ -188,7 +188,7 @@ export class FileSystemAPI {
         }
     }
 
-    private static _getDependenciesJson(dependencies: Dependency[], filePath: string): string {
+    public static _getDependenciesJson(dependencies: Dependency[], filePath: string): string {
         try {
             const depsArray = Array.isArray(dependencies) ? Array.from(dependencies) : [];
 
@@ -198,7 +198,7 @@ export class FileSystemAPI {
         }
     }
 
-    private static _logSaveDepsError(err: any) {
+    public static _logSaveDepsError(err: any) {
         process.stdout.write(String(err) + '\n');
         process.stderr.write('Error saving dependencies\n');
     }

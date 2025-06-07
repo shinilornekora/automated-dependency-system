@@ -12,6 +12,7 @@ type ProjectProps = {
 /**
  * Класс для централизованного описания всего проекта.
  * Отсюда можно прочитать в любой момент любой конфигурационный файл.
+ * TODO: перевести на него ядро
  */
 export class Project {
     private melignoreFile: Record<string, string>;

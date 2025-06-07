@@ -24,7 +24,7 @@ type CommandHandlerProps = {
 
 type CommandType = COMMON_COMMANDS | PROTECTED_COMMANDS;
 
-type HandlerProps<T extends CommandType = CommandType> = {
+export type HandlerProps<T extends CommandType = CommandType> = {
     type: T;
     payload: HandlerPayloadMap[T];
 };

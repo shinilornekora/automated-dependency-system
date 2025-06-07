@@ -9,9 +9,13 @@ interface PeerConstraint {
     from: string;
 }
 
+// TODO: в будущем переехать на kiwi, когда он будет сильнее semver
+// пока что он медленнее
+// сниппет не удалять
 function semverToKiwiConstraints(peerRange: string, variable: kiwi.Variable) {
     const constraints: kiwi.Constraint[] = [];
     const range = new semver.Range(peerRange);
+
     // Перебираем все поддиапазоны ("sets")
     range.set.forEach(comparatorSet => {
         comparatorSet.forEach(comparator => {
